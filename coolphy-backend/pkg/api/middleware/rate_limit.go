@@ -11,12 +11,13 @@ import (
 
 // RateLimiter applies a token bucket limiter like "100-M" (100 reqs per minute)
 func RateLimiter(rateStr string) gin.HandlerFunc {
-	rate := limiter.Rate{}
-	if rateStr == "" {
+	if strings.TrimSpace(rateStr) == "" {
 		rateStr = "100-M"
 	}
-	if p := strings.TrimSpace(rateStr); p != "" {
-		rate = limiter.MustParse(p)
+	rate, err := limiter.NewRateFromFormatted(rateStr)
+	if err != nil {
+		// Fallback to sane default if parse fails
+		rate, _ = limiter.NewRateFromFormatted("100-M")
 	}
 	store := memory.NewStore()
 	lim := limiter.New(store, rate)
