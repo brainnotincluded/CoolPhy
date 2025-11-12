@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 FROM golang:1.22-alpine AS builder
 WORKDIR /app
+# Install git (needed for go module downloads) and certificates
+RUN apk add --no-cache git ca-certificates && update-ca-certificates
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
