@@ -1,0 +1,2 @@
+-- Placeholder: using GORM AutoMigrate instead.
+-- Add hand-written migrations here if needed.

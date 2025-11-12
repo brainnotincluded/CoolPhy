@@ -1,0 +1,28 @@
+# Go, binaries, caches
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go modules
+vendor/
+
+# IDE/editor
+.idea/
+.vscode/
+.DS_Store
+
+# Env
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Coverage
+coverage/
+*.coverprofile

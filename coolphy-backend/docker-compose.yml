@@ -1,0 +1,34 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: coolphy
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      PORT: 8080
+      DB_URL: postgres://postgres:postgres@db:5432/coolphy?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-changeme}
+      RATE_LIMIT: ${RATE_LIMIT:-100-M}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+    ports:
+      - "80:8080"
+    restart: unless-stopped
+volumes:
+  pgdata:
