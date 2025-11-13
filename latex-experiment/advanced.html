@@ -353,6 +353,10 @@
             line-height: 1.5;
             white-space: pre-wrap;
         }
+        /* Preview hover mapping */
+        .src:hover, .tikz-card:hover { outline: 2px solid #0e639c; outline-offset: 2px; background: rgba(14,99,156,0.08); }
+        /* Monaco highlight */
+        .monaco-editor .code-highlight { background: rgba(14,99,156,0.35); border-bottom: 1px solid #0e639c; }
         
         ::-webkit-scrollbar {
             width: 10px;
@@ -490,6 +494,8 @@
     
     <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas for PDF export of preview -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     
     <!-- JSXGraph -->
     <script src="https://cdn.jsdelivr.net/npm/jsxgraph@1.7.0/distrib/jsxgraphcore.js"></script>
@@ -599,11 +605,21 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 const docMatch = code.match(/\\begin\{document\}([\s\S]*?)\\end\{document\}/);
                 let content = docMatch ? docMatch[1] : code;
                 
-                // Convert LaTeX to HTML
-                content = content.replace(/\\section\{([^}]+)\}/g, '<h2>$1</h2>');
-                content = content.replace(/\\subsection\{([^}]+)\}/g, '<h3>$1</h3>');
-                content = content.replace(/\\textbf\{([^}]+)\}/g, '<strong>$1</strong>');
-                content = content.replace(/\\textit\{([^}]+)\}/g, '<em>$1</em>');
+                // Convert LaTeX to HTML with source spans for hover mapping
+                const contentStartOffset = code.indexOf(content);
+                content = content.replace(/\\section\{([^}]+)\}/g, (m, t, offset) => `<h2 class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${t}</h2>`);
+                content = content.replace(/\\subsection\{([^}]+)\}/g, (m, t, offset) => `<h3 class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${t}</h3>`);
+                content = content.replace(/\\textbf\{([^}]+)\}/g, (m, t, offset) => `<strong class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${t}</strong>`);
+                content = content.replace(/\\textit\{([^}]+)\}/g, (m, t, offset) => `<em class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${t}</em>`);
+                // Wrap math with spans to keep mapping
+                const wrapMath = (regex) => {
+                    content = content.replace(regex, (m, _inner, offset) => `<span class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${m}</span>`);
+                };
+                wrapMath(/\$\$([\s\S]*?)\$\$/g);
+                wrapMath(/\\\[([\s\S]*?)\\\]/g);
+                wrapMath(/\\\(([\s\S]*?)\\\)/g);
+                // Inline $...$ (do last to avoid touching $$)
+                content = content.replace(/(^|[^$])\$([^$\n]+?)\$(?!\$)/g, (m, p1, body, offset) => `${p1}<span class="src" data-start="${contentStartOffset+offset+(p1?1:0)}" data-end="${contentStartOffset+offset+m.length}">$${body}$</span>`);
                 
                 const tempDiv = document.createElement('div');
                 
@@ -635,8 +651,9 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     if (align === 'left') alignStyle = 'display:block;margin-left:0;margin-right:auto;';
                     if (align === 'right') alignStyle = 'display:block;margin-left:auto;margin-right:0;';
                     const sel = (opt) => (opt===align ? ' selected' : '');
-                    tikzMatches.push({ id, code: match });
-                    return `<div class=\"tikz-card\" data-id=\"${id}\" style=\"width:${width}%;${alignStyle}\">`+
+                    const start = contentStartOffset + offset; const end = start + match.length;
+                    tikzMatches.push({ id, code: match, start, end });
+                    return `<div class=\"tikz-card\" data-id=\"${id}\" data-start=\"${start}\" data-end=\"${end}\" style=\"width:${width}%;${alignStyle}\">`+
                            `<div id=\"${id}\" class=\"tikz-frame\"></div>`+
                            `<div class=\"tikz-card-ctrl\">`+
                            `<label style=\"color:#ccc\">Width</label>`+
@@ -730,6 +747,23 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     card.addEventListener('dragover', (e)=>{ e.preventDefault(); });
                     card.addEventListener('drop', (e)=>{ e.preventDefault(); const fromId = e.dataTransfer.getData('text/plain'); const from = document.querySelector(`.tikz-card[data-id="${fromId}"]`); if(from && from!==card){ card.parentNode.insertBefore(from, card); }});
                 });
+
+                // Hover -> highlight mapping
+                let decorations = [];
+                const offsetToPos = (text, off) => { const s = text.slice(0, off).split('\n'); return { line: s.length, col: s[s.length-1].length + 1 }; };
+                const highlight = (start, end) => {
+                    const s = offsetToPos(code, start); const e = offsetToPos(code, end);
+                    decorations = monacoEditor.deltaDecorations(decorations, [{ range: new monaco.Range(s.line, s.col, e.line, e.col), options: { inlineClassName: 'code-highlight' } }]);
+                };
+                const clearHighlight = () => { decorations = monacoEditor.deltaDecorations(decorations, []); };
+                preview.addEventListener('mouseover', (ev) => {
+                    const el = ev.target.closest('[data-start][data-end]'); if (!el) return;
+                    highlight(parseInt(el.dataset.start,10), parseInt(el.dataset.end,10));
+                });
+                preview.addEventListener('mouseout', (ev) => {
+                    const el = ev.target.closest('[data-start][data-end]'); if (!el) return; clearHighlight();
+                });
+
             } catch (error) {
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'error';
@@ -1049,22 +1083,61 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
             alert('Code copied to clipboard!');
         });
         
-        document.getElementById('export-pdf').addEventListener('click', () => {
+        document.getElementById('export-pdf').addEventListener('click', async () => {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.setFontSize(16);
-            doc.text('LaTeX Document Export', 20, 20);
-            doc.setFontSize(10);
-            doc.text('Note: For full LaTeX rendering, compile the .tex file with a LaTeX compiler.', 20, 30);
-            doc.text('This PDF contains the LaTeX source code.', 20, 37);
-            
-            const code = monacoEditor.getValue();
-            const lines = doc.splitTextToSize(code, 170);
-            doc.setFontSize(9);
-            doc.text(lines, 20, 50);
-            
-            doc.save('latex-document.pdf');
+            const preview = document.getElementById('preview');
+
+            // Clone preview and replace iframes with SVG images
+            const clone = preview.cloneNode(true);
+            const liveIframes = preview.querySelectorAll('.tikz-frame iframe');
+            const cloneIframes = clone.querySelectorAll('.tikz-frame iframe');
+            for (let i = 0; i < liveIframes.length; i++) {
+                const live = liveIframes[i];
+                const doc = live.contentDocument;
+                if (doc) {
+                    const svg = doc.querySelector('svg');
+                    if (svg) {
+                        const ser = new XMLSerializer();
+                        const svgStr = ser.serializeToString(svg);
+                        const img = document.createElement('img');
+                        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+                        img.style.width = live.style.width || '100%';
+                        cloneIframes[i].parentNode.replaceChild(img, cloneIframes[i]);
+                    }
+                }
+            }
+            // Render clone to canvas
+            const hidden = document.createElement('div');
+            hidden.style.position = 'fixed'; hidden.style.left = '-99999px'; hidden.style.top = '0';
+            hidden.appendChild(clone);
+            document.body.appendChild(hidden);
+            const canvas = await html2canvas(clone, { backgroundColor: '#ffffff', scale: 2, useCORS: true, foreignObjectRendering: true });
+            document.body.removeChild(hidden);
+
+            const pdf = new jsPDF('p', 'pt', 'a4');
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            const margin = 24;
+            const imgW = pageW - margin * 2;
+            const imgH = canvas.height * imgW / canvas.width;
+
+            // Split across pages if needed
+            let remainingH = imgH;
+            let sY = 0;
+            while (remainingH > 0) {
+                const sliceHpx = Math.min(canvas.height - sY, (pageH - margin * 2) * canvas.width / imgW);
+                const sliceCanvas = document.createElement('canvas');
+                sliceCanvas.width = canvas.width; sliceCanvas.height = sliceHpx;
+                const ctx = sliceCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, sY, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
+                const imgData = sliceCanvas.toDataURL('image/png');
+                const sliceHpt = sliceHpx * imgW / canvas.width;
+                pdf.addImage(imgData, 'PNG', margin, margin, imgW, sliceHpt);
+                remainingH -= sliceHpt;
+                sY += sliceHpx;
+                if (remainingH > 0) pdf.addPage();
+            }
+            pdf.save('preview.pdf');
         });
         
         document.getElementById('refresh-preview').addEventListener('click', renderLatex);
