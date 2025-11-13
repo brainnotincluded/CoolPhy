@@ -503,10 +503,11 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
         let renderTimeout;
         function debounceRender() {
             clearTimeout(renderTimeout);
-            renderTimeout = setTimeout(renderLatex, 500);
+            renderTimeout = setTimeout(renderLatex, 300);
         }
         
         function renderLatex() {
+            if (!monacoEditor) return;
             const code = monacoEditor.getValue();
             const preview = document.getElementById('preview');
             preview.innerHTML = '';
@@ -522,10 +523,12 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 content = content.replace(/\\textbf\{([^}]+)\}/g, '<strong>$1</strong>');
                 content = content.replace(/\\textit\{([^}]+)\}/g, '<em>$1</em>');
                 
-                // Handle TikZ pictures - wrap them in script tags for TikZJax
-                content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, 
-                    '<div style="background: white; padding: 20px; margin: 10px 0; border-radius: 4px;">' +
-                    '<script type="text/tikz">$1</script></div>');
+                // Handle TikZ pictures - create placeholder and render separately
+                const tikzMatches = [];
+                content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, (match) => {
+                    tikzMatches.push(match);
+                    return `<div class="tikz-placeholder" data-index="${tikzMatches.length - 1}" style="background: white; padding: 20px; margin: 10px 0; border-radius: 4px;"></div>`;
+                });
                 
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = content;
@@ -543,16 +546,16 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 });
                 
                 // Process TikZ diagrams with TikZJax
-                if (typeof tikzjax !== 'undefined') {
-                    setTimeout(() => {
-                        const tikzScripts = preview.querySelectorAll('script[type="text/tikz"]');
-                        tikzScripts.forEach(script => {
-                            if (!script.dataset.processed) {
-                                tikzjax.process(script);
-                                script.dataset.processed = 'true';
-                            }
-                        });
-                    }, 100);
+                if (tikzMatches.length > 0) {
+                    tikzMatches.forEach((tikzCode, index) => {
+                        const placeholder = preview.querySelector(`.tikz-placeholder[data-index="${index}"]`);
+                        if (placeholder) {
+                            const script = document.createElement('script');
+                            script.type = 'text/tikz';
+                            script.textContent = tikzCode;
+                            placeholder.appendChild(script);
+                        }
+                    });
                 }
             } catch (error) {
                 const errorDiv = document.createElement('div');
