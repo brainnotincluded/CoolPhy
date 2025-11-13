@@ -1162,6 +1162,9 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         resizeTikzCanvas();
         
         function renderTikzCanvas() {
+            const w = tikzCanvasWidth;
+            const h = tikzCanvasHeight;
+            tikzCtx.save();
             tikzCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
             tikzCtx.fillStyle = 'white';
             tikzCtx.fillRect(0, 0, w, h);
