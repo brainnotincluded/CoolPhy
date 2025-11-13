@@ -118,6 +118,120 @@ func Profile() gin.HandlerFunc {
 	}
 }
 
+type updateProfilePayload struct {
+	Name     string   `json:"name"`
+	Subjects []string `json:"subjects"`
+}
+
+// UpdateProfile godoc
+// @Summary      Update profile
+// @Tags         profile
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      updateProfilePayload  true  "Profile data"
+// @Success      200      {object}  map[string]interface{}
+// @Router       /profile [put]
+func UpdateProfile() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uid, _ := c.Get("userID")
+		var p updateProfilePayload
+		if err := c.ShouldBindJSON(&p); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		var u models.User
+		if err := db.Get().First(&u, uid).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		if p.Name != "" {
+			u.Name = p.Name
+		}
+		if p.Subjects != nil {
+			u.Subjects = p.Subjects
+		}
+		if err := db.Get().Save(&u).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"id": u.ID, "email": u.Email, "name": u.Name, "subjects": u.Subjects})
+	}
+}
+
+// ProfileStats godoc
+// @Summary      Get profile statistics
+// @Tags         profile
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /profile/stats [get]
+func ProfileStats() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uid, _ := c.Get("userID")
+		var u models.User
+		if err := db.Get().First(&u, uid).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		var solvedCount int64
+		db.Get().Model(&models.SolutionAttempt{}).Where("user_id = ? AND status = ?", uid, "correct").Count(&solvedCount)
+		var totalAttempts int64
+		db.Get().Model(&models.SolutionAttempt{}).Where("user_id = ?", uid).Count(&totalAttempts)
+		c.JSON(http.StatusOK, gin.H{
+			"points":         u.Points,
+			"solved_count":   solvedCount,
+			"total_attempts": totalAttempts,
+			"subjects":       u.Subjects,
+		})
+	}
+}
+
+type changePasswordPayload struct {
+	OldPassword string `json:"old_password" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=6"`
+}
+
+// ChangePassword godoc
+// @Summary      Change password
+// @Tags         profile
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      changePasswordPayload  true  "Passwords"
+// @Success      200      {object}  map[string]interface{}
+// @Router       /password/change [post]
+func ChangePassword() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uid, _ := c.Get("userID")
+		var p changePasswordPayload
+		if err := c.ShouldBindJSON(&p); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		var u models.User
+		if err := db.Get().First(&u, uid).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		if !utils.CheckPassword(u.PasswordHash, p.OldPassword) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "incorrect old password"})
+			return
+		}
+		hash, err := utils.HashPassword(p.NewPassword)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "hash error"})
+			return
+		}
+		u.PasswordHash = hash
+		if err := db.Get().Save(&u).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "password changed"})
+	}
+}
+
 // ListLectures godoc
 // @Summary      List lectures
 // @Tags         lectures
@@ -634,5 +748,158 @@ func CreateLectureNote() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusCreated, note)
+	}
+}
+
+// Admin User Management
+
+// ListUsers godoc
+// @Summary      List all users (admin)
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.User
+// @Router       /users [get]
+func ListUsers() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var users []models.User
+		if err := db.Get().Select("id, email, name, role, points, created_at").Limit(100).Order("created_at desc").Find(&users).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, users)
+	}
+}
+
+// GetUser godoc
+// @Summary      Get user by ID (admin)
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  models.User
+// @Router       /users/{id} [get]
+func GetUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var user models.User
+		if err := db.Get().First(&user, id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, user)
+	}
+}
+
+// UpdateUser godoc
+// @Summary      Update user (admin)
+// @Tags         admin
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "User ID"
+// @Param        user  body      updateProfilePayload  true  "User data"
+// @Success      200   {object}  models.User
+// @Router       /users/{id} [put]
+func UpdateUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var existing models.User
+		if err := db.Get().First(&existing, id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		var p updateProfilePayload
+		if err := c.ShouldBindJSON(&p); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if p.Name != "" {
+			existing.Name = p.Name
+		}
+		if p.Subjects != nil {
+			existing.Subjects = p.Subjects
+		}
+		if err := db.Get().Save(&existing).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
+			return
+		}
+		c.JSON(http.StatusOK, existing)
+	}
+}
+
+// DeleteUser godoc
+// @Summary      Delete user (admin)
+// @Tags         admin
+// @Security     BearerAuth
+// @Param        id   path      int  true  "User ID"
+// @Success      204
+// @Router       /users/{id} [delete]
+func DeleteUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		if err := db.Get().Delete(&models.User{}, id).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "delete failed"})
+			return
+		}
+		c.Status(http.StatusNoContent)
+	}
+}
+
+// Notifications
+
+// ListNotifications godoc
+// @Summary      Get user notifications
+// @Tags         notifications
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.Notification
+// @Router       /notifications [get]
+func ListNotifications() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var notifications []models.Notification
+		if err := db.Get().Where("user_id = ?", userID).Order("created_at desc").Limit(50).Find(&notifications).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, notifications)
+	}
+}
+
+// MarkNotificationRead godoc
+// @Summary      Mark notification as read
+// @Tags         notifications
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Notification ID"
+// @Success      200  {object}  map[string]interface{}
+// @Router       /notifications/{id}/read [put]
+func MarkNotificationRead() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		userID, _ := c.Get("userID")
+		var notif models.Notification
+		if err := db.Get().Where("id = ? AND user_id = ?", id, userID).First(&notif).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "notification not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		notif.IsRead = true
+		if err := db.Get().Save(&notif).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "marked as read"})
 	}
 }

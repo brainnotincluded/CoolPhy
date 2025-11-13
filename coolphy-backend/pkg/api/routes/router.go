@@ -36,7 +36,11 @@ func Register(r *gin.Engine, cfg config.Config) {
 		auth := api.Group("")
 		auth.Use(middleware.Auth(cfg))
 		{
+			// Profile
 			auth.GET("/profile", handlers.Profile())
+			auth.PUT("/profile", handlers.UpdateProfile())
+			auth.GET("/profile/stats", handlers.ProfileStats())
+			auth.POST("/password/change", handlers.ChangePassword())
 			// Solutions
 			auth.POST("/tasks/:id/solve", handlers.SolveTask())
 			auth.GET("/tasks/:id/solutions", handlers.GetTaskSolutions())
@@ -44,21 +48,29 @@ func Register(r *gin.Engine, cfg config.Config) {
 			// Notes
 			auth.GET("/lectures/:id/notes", handlers.GetLectureNotes())
 			auth.POST("/lectures/:id/notes", handlers.CreateLectureNote())
-			// Admin examples
+			// Notifications
+			auth.GET("/notifications", handlers.ListNotifications())
+			auth.PUT("/notifications/:id/read", handlers.MarkNotificationRead())
+			// Admin
 			admin := auth.Group("/admin")
 			admin.Use(middleware.RBAC("admin"))
 			{
 				admin.POST("/lectures", handlers.CreateLecture())
 				admin.POST("/tasks", handlers.CreateTask())
 				admin.POST("/topics", handlers.CreateTopic())
+				// Admin update/delete
+				admin.PUT("/lectures/:id", handlers.UpdateLecture())
+				admin.DELETE("/lectures/:id", handlers.DeleteLecture())
+				admin.PUT("/tasks/:id", handlers.UpdateTask())
+				admin.DELETE("/tasks/:id", handlers.DeleteTask())
+				admin.PUT("/topics/:id", handlers.UpdateTopic())
+				admin.DELETE("/topics/:id", handlers.DeleteTopic())
+				// Admin user management
+				admin.GET("/users", handlers.ListUsers())
+				admin.GET("/users/:id", handlers.GetUser())
+				admin.PUT("/users/:id", handlers.UpdateUser())
+				admin.DELETE("/users/:id", handlers.DeleteUser())
 			}
-			// Admin update/delete (need auth + admin)
-			admin.PUT("/lectures/:id", handlers.UpdateLecture())
-			admin.DELETE("/lectures/:id", handlers.DeleteLecture())
-			admin.PUT("/tasks/:id", handlers.UpdateTask())
-			admin.DELETE("/tasks/:id", handlers.DeleteTask())
-			admin.PUT("/topics/:id", handlers.UpdateTopic())
-			admin.DELETE("/topics/:id", handlers.DeleteTopic())
 		}
 	}
 }
