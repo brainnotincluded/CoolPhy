@@ -153,8 +153,8 @@
         
         /* Images: fixed thumbnail size that does not eat the whole line */
         #preview img {
-            width: 250px;
-            height: 250px;
+            width: 250px !important;
+            height: 250px !important;
             object-fit: contain;
             display: inline-block;
             margin: 6px;
@@ -235,7 +235,16 @@
             vertical-align: top;
             margin: 8px;
             background: transparent;
-            width: 100%;
+            width: 250px !important; /* fixed thumbnail width so it doesn't eat full line */
+        }
+        
+        .tikz-frame {
+            width: 250px !important;
+            height: 250px !important;
+        }
+        .tikz-frame iframe {
+            width: 100% !important;
+            height: 100% !important;
         }
         
         /* TikZ Editor */
