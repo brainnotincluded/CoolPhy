@@ -151,12 +151,21 @@
             min-width: 0;
         }
         
-        /* Preview content should use as much visible space as possible, but not overflow */
-        #preview img,
+        /* Images: fixed thumbnail size that does not eat the whole line */
+        #preview img {
+            width: 250px;
+            height: 250px;
+            object-fit: contain;
+            display: inline-block;
+            margin: 6px;
+            vertical-align: middle;
+        }
+        
+        /* SVG/iframes (TikZ, JSXGraph, etc.) still use available width */
         #preview svg {
-            width: 100%;           /* always fill preview width */
+            width: 100%;
             height: auto;
-            max-height: calc(100vh - 160px); /* keep fully visible on common screens */
+            max-height: calc(100vh - 160px);
             object-fit: contain;
             display: block;
             margin: 10px auto;
