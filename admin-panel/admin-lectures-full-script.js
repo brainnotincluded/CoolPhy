@@ -348,6 +348,62 @@ function saveHistory() {
     tikzHistory.push(JSON.parse(JSON.stringify(tikzObjects)));
 }
 
+function renderTikzPreview() {
+    const preview = document.getElementById('preview');
+    preview.innerHTML = '<div class="code-output"><h3>TikZ Code:</h3><pre>' + generateTikZCode() + '</pre></div>';
+}
+
+function generateTikZCode() {
+    let code = '\\begin{tikzpicture}[scale=0.1]\n';
+    
+    tikzObjects.forEach(obj => {
+        const x1 = (obj.x1 / 10).toFixed(2);
+        const y1 = (obj.y1 / 10).toFixed(2);
+        const x2 = (obj.x2 / 10).toFixed(2);
+        const y2 = (obj.y2 / 10).toFixed(2);
+        const x = (obj.x / 10).toFixed(2);
+        const y = (obj.y / 10).toFixed(2);
+        
+        switch (obj.type) {
+            case 'line':
+                code += `  \\draw (${x1},${y1}) -- (${x2},${y2});\n`;
+                break;
+            case 'arrow':
+                code += `  \\draw[->,thick] (${x1},${y1}) -- (${x2},${y2});\n`;
+                break;
+            case 'rectangle':
+                const w = (obj.width / 10).toFixed(2);
+                const h = (obj.height / 10).toFixed(2);
+                code += `  \\draw (${x},${y}) rectangle +(${w},${h});\n`;
+                break;
+            case 'circle':
+                const r = (obj.radius / 10).toFixed(2);
+                code += `  \\draw (${x},${y}) circle (${r});\n`;
+                break;
+            case 'text':
+                code += `  \\node at (${x},${y}) {${obj.text}};\n`;
+                break;
+            case 'node':
+                code += `  \\node[draw] at (${x},${y}) {${obj.text}};\n`;
+                break;
+        }
+    });
+    
+    code += '\\end{tikzpicture}';
+    return code;
+}
+
+// TikZ toolbar buttons
+document.getElementById('clear-tikz').addEventListener('click', () => {
+    tikzObjects = [];
+    saveHistory();
+    renderTikzCanvas();
+});
+
+document.getElementById('generate-tikz').addEventListener('click', () => {
+    renderTikzPreview();
+});
+
 saveHistory();
 resizeTikzCanvas();
 
