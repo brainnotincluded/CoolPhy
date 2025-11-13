@@ -130,16 +130,14 @@
         }
         
         #monaco-editor,
-        #monaco-solution,
-        #monaco-hint {
+        #monaco-solution {
             flex: 1;
             min-height: 0;
             height: 100%;
             width: 100%;
         }
         #latex-editor,
-        #solution-editor,
-        #hint-editor {
+        #solution-editor {
             flex: 1;
             min-height: 0;
         }
@@ -448,7 +446,6 @@
             <div class="tabs">
                 <button class="tab active" data-tab="latex-editor">Description</button>
                 <button class="tab" data-tab="solution-editor">Solution</button>
-                <button class="tab" data-tab="hint-editor">Hint</button>
                 <button class="tab" data-tab="tikz-visual">TikZ Visual</button>
                 <button class="tab" data-tab="jsxgraph">Graph Plotter</button>
                 <button class="tab" data-tab="task-settings">Task Settings</button>
@@ -462,11 +459,6 @@
             <!-- Solution Editor -->
             <div id="solution-editor" class="editor-content">
                 <div id="monaco-solution"></div>
-            </div>
-            
-            <!-- Hint Editor -->
-            <div id="hint-editor" class="editor-content">
-                <div id="monaco-hint"></div>
             </div>
             
             <!-- TikZ Visual Editor -->
@@ -631,7 +623,6 @@
     <script>
         let monacoEditor;
         let solutionEditor;
-        let hintEditor;
         let currentTab = 'latex-editor';
         let tikzObjects = [];
         let tikzHistory = [];
@@ -691,22 +682,6 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
                 scrollBeyondLastLine: false
             });
             
-            // Hint Editor
-            hintEditor = monaco.editor.create(document.getElementById('monaco-hint'), {
-                value: `% Hint (optional)
-
-Используйте формулы для движения тела, брошенного под углом к горизонту.
-
-Помните, что максимальная высота достигается при $v_y = 0$.`,
-                language: 'latex',
-                theme: 'vs-dark',
-                automaticLayout: true,
-                minimap: { enabled: false },
-                fontSize: 14,
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false
-            });
-            
             // Auto-render on change
             monacoEditor.onDidChangeModelContent(() => {
                 if (currentTab === 'latex-editor') debounceRender();
@@ -714,7 +689,6 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
             solutionEditor.onDidChangeModelContent(() => {
                 if (currentTab === 'solution-editor') debounceRender();
             });
-            hintEditor.onDidChangeModelContent(() => {
                 if (currentTab === 'hint-editor') debounceRender();
             });
             
@@ -757,7 +731,6 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         function renderLatex() {
             let editor = monacoEditor;
             if (currentTab === 'solution-editor' && solutionEditor) editor = solutionEditor;
-            if (currentTab === 'hint-editor' && hintEditor) editor = hintEditor;
             if (!editor) return;
             const code = editor.getValue();
             const preview = document.getElementById('preview');
@@ -1751,7 +1724,7 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
                 type,
                 correct_answer: document.getElementById('task-answer').value,
                 solution_latex: solutionEditor.getValue(),
-                hint_latex: hintEditor.getValue(),
+                hint_latex: "",
                 points: parseInt(document.getElementById('task-points').value),
                 status: document.getElementById('task-status').value
             };
