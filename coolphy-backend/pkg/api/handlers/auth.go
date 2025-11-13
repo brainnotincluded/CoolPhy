@@ -474,3 +474,165 @@ func DeleteTopic() gin.HandlerFunc {
 		c.Status(http.StatusNoContent)
 	}
 }
+
+// Solutions
+
+type solvePayload struct {
+	Answer       string `json:"answer" binding:"required"`
+	SolutionText string `json:"solution_text"`
+	TimeSpent    int    `json:"time_spent"`
+}
+
+// SolveTask godoc
+// @Summary      Submit solution attempt for task
+// @Tags         solutions
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id       path      int           true  "Task ID"
+// @Param        payload  body      solvePayload  true  "Solution"
+// @Success      201      {object}  models.SolutionAttempt
+// @Router       /tasks/{id}/solve [post]
+func SolveTask() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		taskID := c.Param("id")
+		userID, _ := c.Get("userID")
+		var p solvePayload
+		if err := c.ShouldBindJSON(&p); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		// Verify task exists
+		var task models.Task
+		if err := db.Get().First(&task, taskID).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		attempt := models.SolutionAttempt{
+			UserID:       userID.(uint),
+			TaskID:       task.ID,
+			Answer:       p.Answer,
+			SolutionText: p.SolutionText,
+			TimeSpent:    p.TimeSpent,
+			Status:       "pending",
+		}
+		if err := db.Get().Create(&attempt).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "create failed"})
+			return
+		}
+		c.JSON(http.StatusCreated, attempt)
+	}
+}
+
+// GetTaskSolutions godoc
+// @Summary      Get solution history for task
+// @Tags         solutions
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path      int  true  "Task ID"
+// @Success      200  {array}   models.SolutionAttempt
+// @Router       /tasks/{id}/solutions [get]
+func GetTaskSolutions() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		taskID := c.Param("id")
+		userID, _ := c.Get("userID")
+		var attempts []models.SolutionAttempt
+		if err := db.Get().Where("task_id = ? AND user_id = ?", taskID, userID).Order("created_at desc").Find(&attempts).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, attempts)
+	}
+}
+
+// ListSolutions godoc
+// @Summary      Get all user's solution attempts
+// @Tags         solutions
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.SolutionAttempt
+// @Router       /solutions [get]
+func ListSolutions() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var attempts []models.SolutionAttempt
+		if err := db.Get().Where("user_id = ?", userID).Order("created_at desc").Limit(100).Find(&attempts).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, attempts)
+	}
+}
+
+// Notes
+
+type notePayload struct {
+	Content string `json:"content" binding:"required"`
+}
+
+// GetLectureNotes godoc
+// @Summary      Get user notes for lecture
+// @Tags         notes
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path      int  true  "Lecture ID"
+// @Success      200  {array}   models.Note
+// @Router       /lectures/{id}/notes [get]
+func GetLectureNotes() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		lectureID := c.Param("id")
+		userID, _ := c.Get("userID")
+		var notes []models.Note
+		if err := db.Get().Where("lecture_id = ? AND user_id = ?", lectureID, userID).Order("created_at desc").Find(&notes).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, notes)
+	}
+}
+
+// CreateLectureNote godoc
+// @Summary      Add note for lecture
+// @Tags         notes
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id       path      int          true  "Lecture ID"
+// @Param        payload  body      notePayload  true  "Note"
+// @Success      201      {object}  models.Note
+// @Router       /lectures/{id}/notes [post]
+func CreateLectureNote() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		lectureID := c.Param("id")
+		userID, _ := c.Get("userID")
+		var p notePayload
+		if err := c.ShouldBindJSON(&p); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		// Verify lecture exists
+		var lecture models.Lecture
+		if err := db.Get().First(&lecture, lectureID).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "lecture not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		note := models.Note{
+			UserID:    userID.(uint),
+			LectureID: lecture.ID,
+			Content:   p.Content,
+		}
+		if err := db.Get().Create(&note).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "create failed"})
+			return
+		}
+		c.JSON(http.StatusCreated, note)
+	}
+}

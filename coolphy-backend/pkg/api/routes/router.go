@@ -37,6 +37,13 @@ func Register(r *gin.Engine, cfg config.Config) {
 		auth.Use(middleware.Auth(cfg))
 		{
 			auth.GET("/profile", handlers.Profile())
+			// Solutions
+			auth.POST("/tasks/:id/solve", handlers.SolveTask())
+			auth.GET("/tasks/:id/solutions", handlers.GetTaskSolutions())
+			auth.GET("/solutions", handlers.ListSolutions())
+			// Notes
+			auth.GET("/lectures/:id/notes", handlers.GetLectureNotes())
+			auth.POST("/lectures/:id/notes", handlers.CreateLectureNote())
 			// Admin examples
 			admin := auth.Group("/admin")
 			admin.Use(middleware.RBAC("admin"))
