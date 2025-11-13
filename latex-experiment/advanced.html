@@ -623,12 +623,12 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     // Build html with spans at those ranges
                     let out = '', pos = 0;
                     for (const t of tokens) {
-                        out += content.slice(pos, t.start);
+                        out += src.slice(pos, t.start);
                         const frag = src.slice(t.start, t.end);
                         out += `<span class=\"src\" data-start=\"${contentStartOffset+t.start}\" data-end=\"${contentStartOffset+t.end}\">${frag}</span>`;
                         pos = t.end;
                     }
-                    out += content.slice(pos);
+                    out += src.slice(pos);
                     content = out;
                 };
                 wrapTokensFrom(raw, [
@@ -637,11 +637,9 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     {re: /\\\(([\s\S]*?)\\\)/g},
                     {re: /(^|[^$])\$([^$\n]+?)\$(?!\$)/g, adjust: (m)=>({start:m.index+(m[1]?m[1].length:0), end:m.index+m[0].length})}
                 ]);
-                // Strip preview meta from final HTML only (offsets computed from raw)
-                content = content.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
                 
-                // Wrap sections/macros from raw as well
-                const wrapMacros = (src, macroMap) => {
+                // Wrap sections/macros from raw (for offset tracking) but process current content
+                const wrapMacros = (src, currentContent, macroMap) => {
                     let all = [];
                     for (const [macro, tag] of macroMap) {
                         const matches = [...src.matchAll(new RegExp(`\\\\${macro}\\{([^}]+)\\}`, 'g'))];
@@ -652,14 +650,17 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     all.sort((a,b)=>a.start-b.start);
                     let out = '', pos = 0;
                     for (const t of all) {
-                        out += content.slice(pos, t.start);
+                        out += currentContent.slice(pos, t.start);
                         out += `<${t.tag} class=\"src\" data-start=\"${contentStartOffset+t.start}\" data-end=\"${contentStartOffset+t.end}\">${t.inner}</${t.tag}>`;
                         pos = t.end;
                     }
-                    out += content.slice(pos);
-                    content = out;
+                    out += currentContent.slice(pos);
+                    return out;
                 };
-                wrapMacros(raw, [['section','h2'], ['subsection','h3'], ['textbf','strong'], ['textit','em']]);
+                content = wrapMacros(raw, content, [['section','h2'], ['subsection','h3'], ['textbf','strong'], ['textit','em']]);
+                
+                // Strip preview meta from final HTML only (offsets computed from raw)
+                content = content.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
                 
                 const tempDiv = document.createElement('div');
                 
