@@ -396,6 +396,7 @@
             <button class="btn" id="export-pdf">Export PDF</button>
             <button class="btn btn-secondary" id="export-latex">Export LaTeX</button>
             <button class="btn btn-secondary" id="copy-code">Copy Code</button>
+            <a href="docs.html" class="btn btn-secondary" style="text-decoration:none;display:inline-block;">📚 Docs</a>
         </div>
     </header>
     
@@ -606,15 +607,15 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 content = raw.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
                 
                 // First, wrap math tokens based on raw positions to keep mapping stable
-                const inlineRe = /(^|[^$])\$([^$\n]+?)\$(?!\$)/g;
                 const wrapTokensFrom = (src, regexes) => {
                     // Collect tokens without overlap
                     let tokens = [];
                     const covered = (s,e)=>tokens.some(t=>!(e<=t.start||s>=t.end));
-                    for (const re of regexes) {
-                        for (const m of src.matchAll(re)) {
+                    for (const {re, adjust} of regexes) {
+                        const matches = [...src.matchAll(re)];
+                        for (const m of matches) {
                             let s = m.index, e = m.index + m[0].length;
-                            if (re === inlineRe) { s += (m[1] ? 1 : 0); }
+                            if (adjust) { const adj = adjust(m); s = adj.start; e = adj.end; }
                             if (!covered(s,e)) tokens.push({start:s,end:e});
                         }
                     }
@@ -630,15 +631,35 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     out += content.slice(pos);
                     content = out;
                 };
-                wrapTokensFrom(raw, [/\$\$([\s\S]*?)\$\$/g, /\\\[([\s\S]*?)\\\]/g, /\\\(([\s\S]*?)\\\)/g, inlineRe]);
+                wrapTokensFrom(raw, [
+                    {re: /\$\$([\s\S]*?)\$\$/g},
+                    {re: /\\\[([\s\S]*?)\\\]/g},
+                    {re: /\\\(([\s\S]*?)\\\)/g},
+                    {re: /(^|[^$])\$([^$\n]+?)\$(?!\$)/g, adjust: (m)=>({start:m.index+(m[1]?m[1].length:0), end:m.index+m[0].length})}
+                ]);
                 // Strip preview meta from final HTML only (offsets computed from raw)
                 content = content.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
                 
-                // Then replace simple text macros to HTML headings (mapping approximate)
-                content = content.replace(/\\section\{([^}]+)\}/g, (m, t, offset) => `<h2 class=\"src\" data-start=\"${contentStartOffset+offset}\" data-end=\"${contentStartOffset+offset+m.length}\">${t}</h2>`)
-                                 .replace(/\\subsection\{([^}]+)\}/g, (m, t, offset) => `<h3 class=\"src\" data-start=\"${contentStartOffset+offset}\" data-end=\"${contentStartOffset+offset+m.length}\">${t}</h3>`)
-                                 .replace(/\\textbf\{([^}]+)\}/g, (m, t, offset) => `<strong class=\"src\" data-start=\"${contentStartOffset+offset}\" data-end=\"${contentStartOffset+offset+m.length}\">${t}</strong>`)
-                                 .replace(/\\textit\{([^}]+)\}/g, (m, t, offset) => `<em class=\"src\" data-start=\"${contentStartOffset+offset}\" data-end=\"${contentStartOffset+offset+m.length}\">${t}</em>`);
+                // Wrap sections/macros from raw as well
+                const wrapMacros = (src, macroMap) => {
+                    let all = [];
+                    for (const [macro, tag] of macroMap) {
+                        const matches = [...src.matchAll(new RegExp(`\\\\${macro}\\{([^}]+)\\}`, 'g'))];
+                        for (const m of matches) {
+                            all.push({start:m.index, end:m.index+m[0].length, tag, inner:m[1]});
+                        }
+                    }
+                    all.sort((a,b)=>a.start-b.start);
+                    let out = '', pos = 0;
+                    for (const t of all) {
+                        out += content.slice(pos, t.start);
+                        out += `<${t.tag} class=\"src\" data-start=\"${contentStartOffset+t.start}\" data-end=\"${contentStartOffset+t.end}\">${t.inner}</${t.tag}>`;
+                        pos = t.end;
+                    }
+                    out += content.slice(pos);
+                    content = out;
+                };
+                wrapMacros(raw, [['section','h2'], ['subsection','h3'], ['textbf','strong'], ['textit','em']]);
                 
                 const tempDiv = document.createElement('div');
                 

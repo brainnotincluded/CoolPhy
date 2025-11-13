@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Advanced LaTeX & TikZ Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Source+Code+Pro&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 { font-size: 36px; margin-bottom: 10px; color: #fff; }
+        h2 { font-size: 28px; margin: 40px 0 20px; color: #fff; border-bottom: 2px solid #0e639c; padding-bottom: 10px; }
+        h3 { font-size: 20px; margin: 30px 0 15px; color: #1177bb; }
+        p { margin-bottom: 15px; }
+        code {
+            background: #2d2d30;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Source Code Pro', monospace;
+            color: #ce9178;
+        }
+        pre {
+            background: #2d2d30;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 20px 0;
+            border-left: 4px solid #0e639c;
+        }
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: #d4d4d4;
+        }
+        .example {
+            background: #252526;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .example-title {
+            color: #4ec9b0;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #3e3e42;
+        }
+        th {
+            background: #2d2d30;
+            color: #4ec9b0;
+            font-weight: 600;
+        }
+        a {
+            color: #4fc3f7;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 30px;
+            padding: 10px 20px;
+            background: #0e639c;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            background: #1177bb;
+            text-decoration: none;
+        }
+        .note {
+            background: #3a3a1c;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="advanced.html" class="back-link">← Back to Editor</a>
+        
+        <h1>📚 Documentation</h1>
+        <p>Learn how to control diagram layout and positioning in your LaTeX documents.</p>
+
+        <h2>TikZ Diagram Layout Control</h2>
+        <p>You can control the width, alignment, and height of TikZ diagrams directly in your LaTeX code using meta comments.</p>
+
+        <h3>Basic Syntax</h3>
+        <p>Place a comment on the line <strong>immediately before</strong> your <code>\begin{tikzpicture}</code>:</p>
+        
+        <pre><code>% tikz-preview: width=50%, align=center
+
+\begin{tikzpicture}
+  \draw (0,0) -- (2,0);
+  \draw (2,0) circle (0.3cm);
+\end{tikzpicture}</code></pre>
+
+        <h3>Parameters</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Values</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>width</code></td>
+                    <td>20–100 (percent)</td>
+                    <td>Width of the diagram container relative to page width</td>
+                </tr>
+                <tr>
+                    <td><code>align</code></td>
+                    <td><code>inline</code>, <code>left</code>, <code>center</code>, <code>right</code></td>
+                    <td>Horizontal alignment of the diagram</td>
+                </tr>
+                <tr>
+                    <td><code>height</code></td>
+                    <td>Number (pixels)</td>
+                    <td>Fixed height for the diagram (optional, defaults to auto)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Examples</h3>
+
+        <div class="example">
+            <div class="example-title">Full-width centered diagram</div>
+            <pre><code>% tikz-preview: width=100%, align=center
+
+\begin{tikzpicture}
+  \draw (0,0) rectangle (4,3);
+\end{tikzpicture}</code></pre>
+        </div>
+
+        <div class="example">
+            <div class="example-title">Side-by-side diagrams</div>
+            <pre><code>% tikz-preview: width=48%, align=inline
+
+\begin{tikzpicture}
+  \draw (0,0) circle (1cm);
+  \node at (0,0) {Diagram A};
+\end{tikzpicture}
+
+% tikz-preview: width=48%, align=inline
+
+\begin{tikzpicture}
+  \draw (0,0) circle (1cm);
+  \node at (0,0) {Diagram B};
+\end{tikzpicture}</code></pre>
+            <p style="margin-top:10px; font-size:14px; color:#858585;">
+                Use <code>align=inline</code> to place diagrams on the same row
+            </p>
+        </div>
+
+        <div class="example">
+            <div class="example-title">Fixed height diagram</div>
+            <pre><code>% tikz-preview: width=60%, align=center, height=200
+
+\begin{tikzpicture}
+  \draw (0,0) -- (5,0) -- (5,3) -- (0,3) -- cycle;
+\end{tikzpicture}</code></pre>
+            <p style="margin-top:10px; font-size:14px; color:#858585;">
+                Useful for maintaining consistent spacing
+            </p>
+        </div>
+
+        <div class="note">
+            <strong>Note:</strong> Meta comments are automatically hidden in the preview and PDF export. They only affect layout and do not appear in the rendered output.
+        </div>
+
+        <h2>Features</h2>
+
+        <h3>Hover to Highlight</h3>
+        <p>Hover over any formula, section, or TikZ diagram in the preview to highlight the corresponding LaTeX code in the editor.</p>
+
+        <h3>iPad & Apple Pencil Support</h3>
+        <p>In the TikZ Visual editor, touch input is disabled by default (palm rejection). Toggle <strong>Touch: Off/On</strong> in the toolbar to enable finger drawing.</p>
+
+        <h3>Physics Templates</h3>
+        <p>Use the template dropdown in TikZ Visual to insert common physics diagrams:</p>
+        <ul style="margin-left:30px; margin-bottom:20px;">
+            <li>Solid surface</li>
+            <li>Water surface</li>
+            <li>Spring</li>
+            <li>Pulley (fixed/movable)</li>
+            <li>Balloon</li>
+        </ul>
+
+        <h3>Export Options</h3>
+        <ul style="margin-left:30px; margin-bottom:20px;">
+            <li><strong>Export PDF:</strong> Creates a PDF of the rendered preview (includes TikZ diagrams and math)</li>
+            <li><strong>Export LaTeX:</strong> Downloads the raw .tex file</li>
+            <li><strong>Copy Code:</strong> Copies LaTeX source to clipboard</li>
+        </ul>
+
+        <h2>Tips & Tricks</h2>
+
+        <h3>Multiple diagrams in a row</h3>
+        <p>Set <code>width</code> to less than 50% and use <code>align=inline</code> for each diagram:</p>
+        <pre><code>% tikz-preview: width=30%, align=inline
+\begin{tikzpicture}...\end{tikzpicture}
+
+% tikz-preview: width=30%, align=inline
+\begin{tikzpicture}...\end{tikzpicture}
+
+% tikz-preview: width=30%, align=inline
+\begin{tikzpicture}...\end{tikzpicture}</code></pre>
+
+        <h3>Controlling spacing</h3>
+        <p>Use the <code>height</code> parameter to reserve vertical space and prevent layout shifts as TikZ compiles.</p>
+
+        <h3>Default behavior</h3>
+        <p>If no meta comment is provided, diagrams default to:</p>
+        <ul style="margin-left:30px;">
+            <li>width: 100%</li>
+            <li>align: inline</li>
+            <li>height: auto</li>
+        </ul>
+
+        <h2>Need Help?</h2>
+        <p>For more examples and updates, check the <a href="https://github.com/brainnotincluded/CoolPhy" target="_blank">GitHub repository</a>.</p>
+
+        <div style="margin-top:60px; padding-top:20px; border-top:1px solid #3e3e42; text-align:center; color:#858585;">
+            <p>Advanced LaTeX & TikZ Editor &mdash; Built for physics, math, and CS educators</p>
+        </div>
+    </div>
+</body>
+</html>
