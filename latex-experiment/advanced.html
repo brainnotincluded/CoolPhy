@@ -14,6 +14,9 @@
     
     <!-- Monaco Editor -->
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Source+Serif+Pro:wght@400;600&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         * {
@@ -129,6 +132,14 @@
         #monaco-editor {
             flex: 1;
             min-height: 0;
+            height: 100%;
+            width: 100%;
+        }
+            width: 100%;
+        }
+        #latex-editor {
+            flex: 1;
+            min-height: 0;
         }
         
         .preview-pane {
@@ -154,6 +165,48 @@
             padding: 20px;
             overflow-y: auto;
             background: #1e1e1e;
+        }
+        
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 20px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 12px;
+        }
+        .preview-controls label { color: #ccc; }
+        .preview-controls input, .preview-controls select {
+            background: #3e3e42; color: #ccc; border: 1px solid #555; border-radius: 3px; padding: 4px 6px;
+        }
+        
+        .tikz-frame {
+            display: inline-block;
+            vertical-align: top;
+            width: 100%;
+            margin: 8px;
+            background: #fff;
+            border-radius: 4px;
+        }
+        .tikz-card-ctrl {
+            position: relative;
+            margin-top: 4px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 12px;
+            color: #ccc;
+        }
+        .tikz-card-ctrl input, .tikz-card-ctrl select {
+            background: #3e3e42; color: #ccc; border: 1px solid #555; border-radius: 3px; padding: 2px 4px;
+        }
+        .tikz-card {
+            display: inline-block;
+            vertical-align: top;
+            margin: 8px;
+            background: transparent;
+            width: 100%;
         }
         
         /* TikZ Editor */
@@ -196,6 +249,7 @@
             position: absolute;
             background: white;
             cursor: crosshair;
+            touch-action: none; /* better Apple Pencil support */
         }
         
         .tikz-controls {
@@ -323,6 +377,18 @@
     <header>
         <h1>⚡ Advanced LaTeX & TikZ Editor</h1>
         <div class="header-actions">
+            <label style="color:#ccc;font-size:12px;">Preset</label>
+            <select id="style-preset">
+                <option value="clean">Clean Sans</option>
+                <option value="teacher">Teacher Serif</option>
+                <option value="hand">Handwritten</option>
+            </select>
+            <label style="color:#ccc;font-size:12px;">Font</label>
+            <select id="font-select">
+                <option value="Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">Inter</option>
+                <option value="'Source Serif Pro', Georgia, serif">Source Serif</option>
+                <option value="Kalam, 'Comic Neue', cursive">Kalam (handwriting)</option>
+            </select>
             <button class="btn" id="export-pdf">Export PDF</button>
             <button class="btn btn-secondary" id="export-latex">Export LaTeX</button>
             <button class="btn btn-secondary" id="copy-code">Copy Code</button>
@@ -353,6 +419,16 @@
                     <button class="tool-btn" data-tool="text">Text</button>
                     <button class="tool-btn" data-tool="node">Node</button>
                     <button class="tool-btn" data-tool="curve">Curve</button>
+                    <button class="tool-btn" id="toggle-touch">Touch: Off</button>
+                    <select id="template-select" class="tool-btn" style="padding:6px 8px;">
+                        <option value="">Add template…</option>
+                        <option value="surface-solid">Solid surface</option>
+                        <option value="surface-water">Water surface</option>
+                        <option value="spring">Spring</option>
+                        <option value="pulley-fixed">Pulley (fixed)</option>
+                        <option value="pulley-movable">Pulley (movable)</option>
+                        <option value="balloon">Balloon</option>
+                    </select>
                 </div>
                 <div id="tikz-canvas-container">
                     <canvas id="tikz-canvas" width="800" height="600"></canvas>
@@ -397,6 +473,12 @@
             <div class="pane-header">
                 <span>Live Preview</span>
                 <button class="btn btn-secondary" id="refresh-preview">Refresh</button>
+            </div>
+            <div class="preview-controls">
+                <label>Default diagram width (%)</label>
+                <input type="range" id="default-tikz-width" min="20" max="100" value="100" style="width:140px">
+                <label>Gap (px)</label>
+                <input type="number" id="tikz-gap" value="8" style="width:60px">
             </div>
             <div id="preview"></div>
         </div>
@@ -526,11 +608,48 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 const tempDiv = document.createElement('div');
                 
                 // Handle TikZ pictures - replace with iframes that run TikZJax inside
+                function hashCode(str){let h=0;for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0}return Math.abs(h)}
                 const tikzMatches = [];
-                content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, (match) => {
-                    const id = 'tikz-' + Date.now() + '-' + tikzMatches.length;
+                content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, (match, _g1, offset) => {
+                    const id = 'tikz-' + hashCode(match);
+                    // Parse previous line for meta like: % tikz-preview: width=50%, align=center
+                    const before = content.slice(0, offset);
+                    const lineStart = before.lastIndexOf('\n') + 1;
+                    const prevLine = before.slice(lineStart).trim();
+                    let meta = {};
+                    const metaMatch = prevLine.match(/^%\s*tikz-(?:preview|layout)\s*:\s*(.+)$/i);
+                    if (metaMatch) {
+                        metaMatch[1].split(',').forEach(pair => {
+                            const [k,v] = pair.split('=').map(s=>s.trim());
+                            if (!k) return; const key = k.toLowerCase();
+                            if (key === 'width') { const n = parseInt((v||'').replace('%',''),10); if (!isNaN(n)) meta.width = Math.max(20, Math.min(100, n)); }
+                            if (key === 'align') { const a = (v||'').toLowerCase(); if (['inline','center','left','right'].includes(a)) meta.align = a; }
+                        });
+                    }
+                    const saved = JSON.parse(localStorage.getItem('tikz_cfg_'+id) || '{}');
+                    const width = (meta.width != null ? meta.width : (saved.width || parseInt(document.getElementById('default-tikz-width')?.value || '100',10)));
+                    const align = meta.align || saved.align || 'inline';
+                    let alignStyle = '';
+                    if (align === 'inline') alignStyle = 'display:inline-block;';
+                    if (align === 'center') alignStyle = 'display:block;margin-left:auto;margin-right:auto;';
+                    if (align === 'left') alignStyle = 'display:block;margin-left:0;margin-right:auto;';
+                    if (align === 'right') alignStyle = 'display:block;margin-left:auto;margin-right:0;';
+                    const sel = (opt) => (opt===align ? ' selected' : '');
                     tikzMatches.push({ id, code: match });
-                    return `<div id=\"${id}\" class=\"tikz-frame\" style=\"margin: 10px 0;\"></div>`;
+                    return `<div class=\"tikz-card\" data-id=\"${id}\" style=\"width:${width}%;${alignStyle}\">`+
+                           `<div id=\"${id}\" class=\"tikz-frame\"></div>`+
+                           `<div class=\"tikz-card-ctrl\">`+
+                           `<label style=\"color:#ccc\">Width</label>`+
+                           `<input type=\"range\" min=\"20\" max=\"100\" value=\"${width}\" data-role=\"width\" style=\"width:120px\">`+
+                           `<label style=\"color:#ccc\">Align</label>`+
+                           `<select data-role=\"align\">`+
+                           `<option value=\"inline\"${sel('inline')}>Inline</option>`+
+                           `<option value=\"center\"${sel('center')}>Center</option>`+
+                           `<option value=\"left\"${sel('left')}>Left</option>`+
+                           `<option value=\"right\"${sel('right')}>Right</option>`+
+                           `</select>`+
+                           `</div>`+
+                           `</div>`;
                 });
                 
                 tempDiv.innerHTML = content;
@@ -550,20 +669,23 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 // Insert iframes for TikZ diagrams
                 tikzMatches.forEach(({ id, code }) => {
                     const container = document.getElementById(id);
-                    if (!container) return;
+                    const card = document.querySelector(`.tikz-card[data-id="${id}"]`);
+                    if (!container || !card) return;
+                    card.style.margin = (parseInt(document.getElementById('tikz-gap').value || '8',10)) + 'px';
                     const iframe = document.createElement('iframe');
                     iframe.style.width = '100%';
                     iframe.style.border = '0';
                     iframe.loading = 'lazy';
                     // Build srcdoc with TikZJax
-                    const html = `<!DOCTYPE html><html><head>
-<meta charset=\"utf-8\">
-<link rel=\"stylesheet\" href=\"https://tikzjax.com/v1/fonts.css\">
-<script defer src=\"https://tikzjax.com/v1/tikzjax.js\"></script>
-<style>html,body{margin:0;padding:0;background:#fff}</style>
-</head><body>
-<script type=\"text/tikz\">${code.replace(/<\//g,'<\\/')}</script>
-</body></html>`;
+                    const escaped = code;
+                    const html = '<!DOCTYPE html><html><head>' +
+                                  '<meta charset="utf-8">' +
+                                  '<link rel="stylesheet" href="https://tikzjax.com/v1/fonts.css">' +
+                                  '<script defer src="https://tikzjax.com/v1/tikzjax.js"><\/script>' +
+                                  '<style>html,body{margin:0;padding:0;background:#fff}</style>' +
+                                  '</head><body>' +
+                                  '<script type="text/tikz">' + escaped + '<\/script>' +
+                                  '</body></html>';
                     iframe.srcdoc = html;
                     // Auto resize when content is ready
                     iframe.onload = () => {
@@ -581,6 +703,35 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     container.innerHTML = '';
                     container.appendChild(iframe);
                 });
+
+                // Wire per-diagram controls
+                document.getElementById('default-tikz-width').addEventListener('input', () => renderLatex());
+                document.getElementById('tikz-gap').addEventListener('input', () => renderLatex());
+                document.querySelectorAll('.tikz-card-ctrl').forEach(ctrl => {
+                    const card = ctrl.closest('.tikz-card');
+                    const id = card.dataset.id;
+                    const widthInput = ctrl.querySelector('[data-role="width"]');
+                    const alignSel = ctrl.querySelector('[data-role="align"]');
+                    widthInput.addEventListener('input', () => {
+                        card.style.width = widthInput.value + '%';
+                        localStorage.setItem('tikz_cfg_'+id, JSON.stringify({ width: parseInt(widthInput.value,10) }));
+                    });
+                    alignSel.addEventListener('change', () => {
+                        const v = alignSel.value;
+                        card.style.display = v === 'inline' ? 'inline-block' : 'block';
+                        if (v === 'center') { card.style.marginLeft = 'auto'; card.style.marginRight = 'auto'; }
+                        if (v === 'left') { card.style.marginLeft = '0'; card.style.marginRight = 'auto'; }
+                        if (v === 'right') { card.style.marginLeft = 'auto'; card.style.marginRight = '0'; }
+                        localStorage.setItem('tikz_cfg_'+id, JSON.stringify({ width: parseInt(widthInput.value,10), align: v }));
+                    });
+                    // Drag to reorder
+                    card.setAttribute('draggable','true');
+                    card.addEventListener('dragstart', (e)=>{ e.dataTransfer.setData('text/plain', id); });
+                    card.addEventListener('dragover', (e)=>{ e.preventDefault(); });
+                    card.addEventListener('drop', (e)=>{ e.preventDefault(); const fromId = e.dataTransfer.getData('text/plain'); const from = document.querySelector(`.tikz-card[data-id="${fromId}"]`); if(from && from!==card){ card.parentNode.insertBefore(from, card); }});
+                });
+            } catch (error) {
+                const errorDiv = document.createElement('div');
                 errorDiv.className = 'error';
                 errorDiv.textContent = 'Error: ' + error.message;
                 preview.appendChild(errorDiv);
@@ -594,6 +745,11 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
         let isDrawing = false;
         let startX, startY;
         let tempShape = null;
+        let touchAllowed = false; // palm rejection off by default (only Pencil/mouse)
+        document.getElementById('toggle-touch').addEventListener('click', () => {
+            touchAllowed = !touchAllowed;
+            document.getElementById('toggle-touch').textContent = 'Touch: ' + (touchAllowed ? 'On' : 'Off');
+        });
         
         // Tool selection
         document.querySelectorAll('.tool-btn').forEach(btn => {
@@ -604,131 +760,77 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
             });
         });
         
-        tikzCanvas.addEventListener('mousedown', (e) => {
+        const pointerDown = (e) => {
+            if (e.pointerType === 'touch' && !touchAllowed) return; // palm rejection
             const rect = tikzCanvas.getBoundingClientRect();
             startX = e.clientX - rect.left;
             startY = e.clientY - rect.top;
             isDrawing = true;
-            
             if (currentTool === 'text') {
                 const text = prompt('Enter text:');
                 if (text) {
-                    tikzObjects.push({
-                        type: 'text',
-                        x: startX,
-                        y: startY,
-                        text: text,
-                        color: document.getElementById('stroke-color').value
-                    });
+                    tikzObjects.push({ type: 'text', x: startX, y: startY, text, color: document.getElementById('stroke-color').value });
                     renderTikzCanvas();
                 }
                 isDrawing = false;
             }
-        });
+        };
+        tikzCanvas.addEventListener('pointerdown', pointerDown);
         
-        tikzCanvas.addEventListener('mousemove', (e) => {
+        const pointerMove = (e) => {
             if (!isDrawing) return;
-            
+            if (e.pointerType === 'touch' && !touchAllowed) return;
             const rect = tikzCanvas.getBoundingClientRect();
             const currentX = e.clientX - rect.left;
             const currentY = e.clientY - rect.top;
-            
             renderTikzCanvas();
-            
             tikzCtx.strokeStyle = document.getElementById('stroke-color').value;
             tikzCtx.lineWidth = document.getElementById('stroke-width').value;
             tikzCtx.fillStyle = document.getElementById('fill-color').value;
-            
             switch (currentTool) {
                 case 'line':
-                    tikzCtx.beginPath();
-                    tikzCtx.moveTo(startX, startY);
-                    tikzCtx.lineTo(currentX, currentY);
-                    tikzCtx.stroke();
+                    tikzCtx.beginPath(); tikzCtx.moveTo(startX, startY); tikzCtx.lineTo(currentX, currentY); tikzCtx.stroke();
                     break;
                 case 'arrow':
-                    drawArrow(tikzCtx, startX, startY, currentX, currentY);
-                    break;
+                    drawArrow(tikzCtx, startX, startY, currentX, currentY); break;
                 case 'rectangle':
-                    tikzCtx.strokeRect(startX, startY, currentX - startX, currentY - startY);
-                    break;
+                    tikzCtx.strokeRect(startX, startY, currentX - startX, currentY - startY); break;
                 case 'circle':
                     const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
-                    tikzCtx.beginPath();
-                    tikzCtx.arc(startX, startY, radius, 0, 2 * Math.PI);
-                    tikzCtx.stroke();
+                    tikzCtx.beginPath(); tikzCtx.arc(startX, startY, radius, 0, 2 * Math.PI); tikzCtx.stroke();
                     break;
             }
-        });
+        };
+        tikzCanvas.addEventListener('pointermove', pointerMove);
         
-        tikzCanvas.addEventListener('mouseup', (e) => {
+        const pointerUp = (e) => {
             if (!isDrawing) return;
-            
+            if (e.pointerType === 'touch' && !touchAllowed) return;
             const rect = tikzCanvas.getBoundingClientRect();
             const endX = e.clientX - rect.left;
             const endY = e.clientY - rect.top;
-            
             const strokeColor = document.getElementById('stroke-color').value;
             const strokeWidth = document.getElementById('stroke-width').value;
             const fillColor = document.getElementById('fill-color').value;
-            
             switch (currentTool) {
                 case 'line':
-                    tikzObjects.push({
-                        type: 'line',
-                        x1: startX, y1: startY,
-                        x2: endX, y2: endY,
-                        color: strokeColor,
-                        width: strokeWidth
-                    });
-                    break;
+                    tikzObjects.push({ type:'line', x1:startX, y1:startY, x2:endX, y2:endY, color:strokeColor, width:strokeWidth }); break;
                 case 'arrow':
-                    tikzObjects.push({
-                        type: 'arrow',
-                        x1: startX, y1: startY,
-                        x2: endX, y2: endY,
-                        color: strokeColor,
-                        width: strokeWidth
-                    });
-                    break;
+                    tikzObjects.push({ type:'arrow', x1:startX, y1:startY, x2:endX, y2:endY, color:strokeColor, width:strokeWidth }); break;
                 case 'rectangle':
-                    tikzObjects.push({
-                        type: 'rectangle',
-                        x: startX, y: startY,
-                        width: endX - startX,
-                        height: endY - startY,
-                        color: strokeColor,
-                        strokeWidth: strokeWidth,
-                        fill: fillColor
-                    });
-                    break;
+                    tikzObjects.push({ type:'rectangle', x:startX, y:startY, width:endX-startX, height:endY-startY, color:strokeColor, strokeWidth:strokeWidth, fill:fillColor }); break;
                 case 'circle':
-                    const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-                    tikzObjects.push({
-                        type: 'circle',
-                        x: startX, y: startY,
-                        radius: radius,
-                        color: strokeColor,
-                        strokeWidth: strokeWidth,
-                        fill: fillColor
-                    });
-                    break;
+                    const radius = Math.sqrt(Math.pow(endX-startX,2)+Math.pow(endY-startY,2));
+                    tikzObjects.push({ type:'circle', x:startX, y:startY, radius, color:strokeColor, strokeWidth:strokeWidth, fill:fillColor }); break;
                 case 'node':
                     const nodeText = prompt('Enter node text:');
-                    if (nodeText) {
-                        tikzObjects.push({
-                            type: 'node',
-                            x: startX, y: startY,
-                            text: nodeText,
-                            color: strokeColor
-                        });
-                    }
+                    if (nodeText) { tikzObjects.push({ type:'node', x:startX, y:startY, text:nodeText, color:strokeColor }); }
                     break;
             }
-            
-            isDrawing = false;
-            renderTikzCanvas();
-        });
+            isDrawing = false; renderTikzCanvas();
+        };
+        tikzCanvas.addEventListener('pointerup', pointerUp);
+        tikzCanvas.addEventListener('pointercancel', pointerUp);
         
         function drawArrow(ctx, fromX, fromY, toX, toY) {
             const headlen = 10;
@@ -813,6 +915,35 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
         
         document.getElementById('generate-tikz').addEventListener('click', () => {
             renderTikzPreview();
+        });
+        
+        // Templates
+        const templateSelect = document.getElementById('template-select');
+        templateSelect.addEventListener('change', () => {
+            const t = templateSelect.value; if (!t) return; templateSelect.value='';
+            const cx = tikzCanvas.width/2, cy = tikzCanvas.height/2;
+            if (t === 'surface-solid') {
+                tikzObjects.push({ type:'rectangle', x:20, y:cy+40, width:tikzCanvas.width-40, height:8, color:'#666', strokeWidth:2, fill:'#666' });
+            } else if (t === 'surface-water') {
+                // wavy line
+                const seg=40; const amp=6; const y=cy+40; let pts=[]; for(let i=20;i<tikzCanvas.width-20;i+=seg){ pts.push({x:i,y:y+Math.sin(i/10)*amp}); }
+                for(let i=0;i<pts.length-1;i++){ tikzObjects.push({ type:'line', x1:pts[i].x, y1:pts[i].y, x2:pts[i+1].x, y2:pts[i+1].y, color:'#1e90ff', width:2 }); }
+            } else if (t === 'spring') {
+                const x0=100,y0=cy, turns=10, pitch=10, amp=10; let prev={x:x0,y:y0};
+                for(let i=1;i<=turns;i++){ const x=x0+i*pitch; const y=y0+(i%2?amp:-amp); tikzObjects.push({ type:'line', x1:prev.x, y1:prev.y, x2:x, y2:y, color:'#888', width:2 }); prev={x,y}; }
+            } else if (t === 'pulley-fixed') {
+                tikzObjects.push({ type:'circle', x:cx-40, y:cy-20, radius:20, color:'#444', strokeWidth:2, fill:'#eee' });
+                tikzObjects.push({ type:'circle', x:cx+40, y:cy-20, radius:20, color:'#444', strokeWidth:2, fill:'#eee' });
+                tikzObjects.push({ type:'line', x1:cx-40, y1:cy-40, x2:cx+40, y2:cy-40, color:'#444', width:3 });
+            } else if (t === 'pulley-movable') {
+                tikzObjects.push({ type:'circle', x:cx, y:cy-20, radius:22, color:'#444', strokeWidth:2, fill:'#eee' });
+                tikzObjects.push({ type:'circle', x:cx, y:cy+60, radius:22, color:'#444', strokeWidth:2, fill:'#eee' });
+                tikzObjects.push({ type:'line', x1:cx, y1:cy-42, x2:cx, y2:cy+38, color:'#444', width:3 });
+            } else if (t === 'balloon') {
+                tikzObjects.push({ type:'circle', x:cx, y:cy, radius:30, color:'#ff4d4f', strokeWidth:2, fill:'#ff6b6d' });
+                tikzObjects.push({ type:'line', x1:cx, y1:cy+30, x2:cx, y2:cy+80, color:'#ff6b6d', width:2 });
+            }
+            renderTikzCanvas();
         });
         
         function generateTikZCode() {
@@ -937,6 +1068,18 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
         });
         
         document.getElementById('refresh-preview').addEventListener('click', renderLatex);
+        
+        // Style presets and fonts
+        const fontSelect = document.getElementById('font-select');
+        const presetSelect = document.getElementById('style-preset');
+        const applyFont = (f) => { document.body.style.fontFamily = f; };
+        fontSelect.addEventListener('change', ()=> applyFont(fontSelect.value));
+        presetSelect.addEventListener('change', ()=> {
+            if (presetSelect.value === 'clean') applyFont('Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif');
+            if (presetSelect.value === 'teacher') applyFont("'Source Serif Pro', Georgia, serif");
+            if (presetSelect.value === 'hand') applyFont("Kalam, 'Comic Neue', cursive");
+        });
+        applyFont(fontSelect.value);
         
         // Initial canvas render
         renderTikzCanvas();
