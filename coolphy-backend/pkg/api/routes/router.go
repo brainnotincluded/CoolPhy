@@ -24,6 +24,7 @@ func Register(r *gin.Engine, cfg config.Config) {
 	{
 		api.POST("/auth/register", handlers.RegisterHandler(cfg))
 		api.POST("/auth/login", handlers.LoginHandler(cfg))
+		api.GET("/ping", handlers.Ping())
 
 		api.GET("/lectures", handlers.ListLectures())
 		api.GET("/lectures/:id", handlers.GetLecture())
@@ -57,10 +58,20 @@ func Register(r *gin.Engine, cfg config.Config) {
 			auth.GET("/professor-chat/:id", handlers.GetChatMessage())
 			// Achievements
 			auth.GET("/achievements", handlers.Achievements())
+			// History
+			auth.GET("/history/tasks", handlers.TaskHistory())
+			auth.GET("/history/lectures", handlers.LectureHistory())
+			auth.GET("/history/profile", handlers.ProfileHistory())
 			// Admin
 			admin := auth.Group("/admin")
 			admin.Use(middleware.RBAC("admin"))
 			{
+				// Admin dashboard
+				admin.GET("", handlers.AdminDashboard())
+				admin.GET("/lectures", handlers.AdminLectures())
+				admin.GET("/tasks", handlers.AdminTasks())
+				admin.GET("/topics", handlers.AdminTopics())
+				// Admin CRUD
 				admin.POST("/lectures", handlers.CreateLecture())
 				admin.POST("/tasks", handlers.CreateTask())
 				admin.POST("/topics", handlers.CreateTopic())

@@ -1040,3 +1040,158 @@ func Achievements() gin.HandlerFunc {
 		})
 	}
 }
+
+// History
+
+// TaskHistory godoc
+// @Summary      Get user task history
+// @Tags         history
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.SolutionAttempt
+// @Router       /history/tasks [get]
+func TaskHistory() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var attempts []models.SolutionAttempt
+		if err := db.Get().Where("user_id = ?", userID).Order("created_at desc").Limit(100).Find(&attempts).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, attempts)
+	}
+}
+
+// LectureHistory godoc
+// @Summary      Get user lecture history
+// @Tags         history
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.Note
+// @Router       /history/lectures [get]
+func LectureHistory() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var notes []models.Note
+		if err := db.Get().Where("user_id = ?", userID).Order("created_at desc").Limit(100).Find(&notes).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, notes)
+	}
+}
+
+// ProfileHistory godoc
+// @Summary      Get user activity log
+// @Tags         history
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /history/profile [get]
+func ProfileHistory() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var attempts []models.SolutionAttempt
+		db.Get().Where("user_id = ?", userID).Order("created_at desc").Limit(50).Find(&attempts)
+		var notes []models.Note
+		db.Get().Where("user_id = ?", userID).Order("created_at desc").Limit(50).Find(&notes)
+		var chats []models.ChatMessage
+		db.Get().Where("user_id = ?", userID).Order("timestamp desc").Limit(50).Find(&chats)
+		c.JSON(http.StatusOK, gin.H{
+			"solution_attempts": attempts,
+			"notes":             notes,
+			"chat_history":      chats,
+		})
+	}
+}
+
+// Admin Dashboard
+
+// AdminDashboard godoc
+// @Summary      Admin dashboard stats
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /admin [get]
+func AdminDashboard() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var userCount, lectureCount, taskCount, solutionCount int64
+		db.Get().Model(&models.User{}).Count(&userCount)
+		db.Get().Model(&models.Lecture{}).Count(&lectureCount)
+		db.Get().Model(&models.Task{}).Count(&taskCount)
+		db.Get().Model(&models.SolutionAttempt{}).Count(&solutionCount)
+		c.JSON(http.StatusOK, gin.H{
+			"users":             userCount,
+			"lectures":          lectureCount,
+			"tasks":             taskCount,
+			"solution_attempts": solutionCount,
+		})
+	}
+}
+
+// AdminLectures godoc
+// @Summary      Admin lectures list with stats
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.Lecture
+// @Router       /admin/lectures [get]
+func AdminLectures() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var lectures []models.Lecture
+		if err := db.Get().Order("created_at desc").Limit(100).Find(&lectures).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, lectures)
+	}
+}
+
+// AdminTasks godoc
+// @Summary      Admin tasks list with stats
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.Task
+// @Router       /admin/tasks [get]
+func AdminTasks() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var tasks []models.Task
+		if err := db.Get().Order("created_at desc").Limit(100).Find(&tasks).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, tasks)
+	}
+}
+
+// AdminTopics godoc
+// @Summary      Admin topics list
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.Topic
+// @Router       /admin/topics [get]
+func AdminTopics() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var topics []models.Topic
+		if err := db.Get().Order("subject, order_index, id").Find(&topics).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, topics)
+	}
+}
+
+// Ping godoc
+// @Summary      Server status check
+// @Tags         technical
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /ping [get]
+func Ping() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "timestamp": time.Now().Unix()})
+	}
+}
