@@ -441,6 +441,7 @@
                     <button class="tool-btn" data-tool="text">Text</button>
                     <button class="tool-btn" data-tool="node">Node</button>
                     <button class="tool-btn" data-tool="curve">Curve</button>
+                    <button class="tool-btn" data-tool="eraser">Eraser</button>
                     <button class="tool-btn" id="toggle-touch">Touch: Off</button>
                     <button class="tool-btn" id="undo-btn" title="Undo (Cmd+Z)">↺ Undo</button>
                     <button class="tool-btn" id="redo-btn" title="Redo (Cmd+Shift+Z)">↻ Redo</button>
@@ -987,7 +988,7 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
             }
         });
         
-        // Pan with spacebar + drag or middle mouse
+        // Pan with shift+drag (mouse) or middle mouse button
         let isPanning = false;
         let panStartX, panStartY;
         tikzCanvas.addEventListener('mousedown', (e) => {
@@ -1013,20 +1014,25 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
             }
         });
         
-        // Fullscreen
+        // Fullscreen (entire TikZ tab so toolbar/tools stay visible)
         document.getElementById('fullscreen-btn').addEventListener('click', () => {
-            const container = document.getElementById('tikz-canvas-container');
+            const tikzTab = document.getElementById('tikz-visual');
             if (!document.fullscreenElement) {
-                container.requestFullscreen().catch(err => console.error(err));
+                tikzTab.requestFullscreen().catch(err => console.error(err));
             } else {
                 document.exitFullscreen();
             }
         });
+        document.addEventListener('fullscreenchange', () => {
+            // Recompute canvas size when entering/exiting fullscreen
+            resizeTikzCanvas();
+        });
         
-        // Tool selection
-        document.querySelectorAll('.tool-btn').forEach(btn => {
+        // Tool selection (only buttons that actually represent drawing tools)
+        const toolButtons = document.querySelectorAll('.tool-btn[data-tool]');
+        toolButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                toolButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentTool = btn.dataset.tool;
             });
@@ -1107,31 +1113,46 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
             const strokeColor = document.getElementById('stroke-color').value;
             const strokeWidth = document.getElementById('stroke-width').value;
             const fillColor = document.getElementById('fill-color').value;
-            switch (currentTool) {
-                case 'line':
-                    tikzObjects.push({ type:'line', x1:startX, y1:startY, x2:endX, y2:endY, color:strokeColor, width:strokeWidth }); 
-                    saveHistory();
-                    break;
-                case 'arrow':
-                    tikzObjects.push({ type:'arrow', x1:startX, y1:startY, x2:endX, y2:endY, color:strokeColor, width:strokeWidth }); 
-                    saveHistory();
-                    break;
-                case 'rectangle':
-                    tikzObjects.push({ type:'rectangle', x:startX, y:startY, width:endX-startX, height:endY-startY, color:strokeColor, strokeWidth:strokeWidth, fill:fillColor }); 
-                    saveHistory();
-                    break;
-                case 'circle':
-                    const radius = Math.sqrt(Math.pow(endX-startX,2)+Math.pow(endY-startY,2));
-                    tikzObjects.push({ type:'circle', x:startX, y:startY, radius, color:strokeColor, strokeWidth:strokeWidth, fill:fillColor }); 
-                    saveHistory();
-                    break;
-                case 'node':
-                    const nodeText = prompt('Enter node text:');
-                    if (nodeText) { 
-                        tikzObjects.push({ type:'node', x:startX, y:startY, text:nodeText, color:strokeColor }); 
-                        saveHistory();
+            if (currentTool === 'eraser') {
+                const threshold = 15;
+                let erased = false;
+                for (let i = tikzObjects.length - 1; i >= 0; i--) {
+                    if (distanceToShape(tikzObjects[i], endX, endY) <= threshold) {
+                        tikzObjects.splice(i, 1);
+                        erased = true;
+                        break;
                     }
-                    break;
+                }
+                if (erased) {
+                    saveHistory();
+                }
+            } else {
+                switch (currentTool) {
+                    case 'line':
+                        tikzObjects.push({ type:'line', x1:startX, y1:startY, x2:endX, y2:endY, color:strokeColor, width:strokeWidth }); 
+                        saveHistory();
+                        break;
+                    case 'arrow':
+                        tikzObjects.push({ type:'arrow', x1:startX, y1:startY, x2:endX, y2:endY, color:strokeColor, width:strokeWidth }); 
+                        saveHistory();
+                        break;
+                    case 'rectangle':
+                        tikzObjects.push({ type:'rectangle', x:startX, y:startY, width:endX-startX, height:endY-startY, color:strokeColor, strokeWidth:strokeWidth, fill:fillColor }); 
+                        saveHistory();
+                        break;
+                    case 'circle':
+                        const radius = Math.sqrt(Math.pow(endX-startX,2)+Math.pow(endY-startY,2));
+                        tikzObjects.push({ type:'circle', x:startX, y:startY, radius, color:strokeColor, strokeWidth:strokeWidth, fill:fillColor }); 
+                        saveHistory();
+                        break;
+                    case 'node':
+                        const nodeText = prompt('Enter node text:');
+                        if (nodeText) { 
+                            tikzObjects.push({ type:'node', x:startX, y:startY, text:nodeText, color:strokeColor }); 
+                            saveHistory();
+                        }
+                        break;
+                }
             }
             isDrawing = false; renderTikzCanvas();
         };
@@ -1153,6 +1174,40 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
             ctx.moveTo(toX, toY);
             ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
             ctx.stroke();
+        }
+        
+        function distanceToShape(obj, px, py) {
+            function distPointToSegment(x1, y1, x2, y2, x0, y0) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                if (dx === 0 && dy === 0) return Math.hypot(x0 - x1, y0 - y1);
+                const t = ((x0 - x1) * dx + (y0 - y1) * dy) / (dx * dx + dy * dy);
+                const clamped = Math.max(0, Math.min(1, t));
+                const nx = x1 + clamped * dx;
+                const ny = y1 + clamped * dy;
+                return Math.hypot(x0 - nx, y0 - ny);
+            }
+            switch (obj.type) {
+                case 'line':
+                case 'arrow':
+                    return distPointToSegment(obj.x1, obj.y1, obj.x2, obj.y2, px, py);
+                case 'rectangle': {
+                    const left = obj.x;
+                    const right = obj.x + obj.width;
+                    const top = obj.y;
+                    const bottom = obj.y + obj.height;
+                    const dx = Math.max(left - px, 0, px - right);
+                    const dy = Math.max(top - py, 0, py - bottom);
+                    return Math.hypot(dx, dy);
+                }
+                case 'circle':
+                    return Math.abs(Math.hypot(px - obj.x, py - obj.y) - obj.radius);
+                case 'text':
+                case 'node':
+                    return Math.hypot(px - obj.x, py - obj.y);
+                default:
+                    return Infinity;
+            }
         }
         
         // Initialize history after saveHistory function is defined
