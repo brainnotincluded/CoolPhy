@@ -737,29 +737,6 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 });
 
                 // No UI controls; layout strictly from code meta
-                
-                    const card = ctrl.closest('.tikz-card');
-                    const id = card.dataset.id;
-                    const widthInput = ctrl.querySelector('[data-role="width"]');
-                    const alignSel = ctrl.querySelector('[data-role="align"]');
-                    widthInput.addEventListener('input', () => {
-                        card.style.width = widthInput.value + '%';
-                        localStorage.setItem('tikz_cfg_'+id, JSON.stringify({ width: parseInt(widthInput.value,10) }));
-                    });
-                    alignSel.addEventListener('change', () => {
-                        const v = alignSel.value;
-                        card.style.display = v === 'inline' ? 'inline-block' : 'block';
-                        if (v === 'center') { card.style.marginLeft = 'auto'; card.style.marginRight = 'auto'; }
-                        if (v === 'left') { card.style.marginLeft = '0'; card.style.marginRight = 'auto'; }
-                        if (v === 'right') { card.style.marginLeft = 'auto'; card.style.marginRight = '0'; }
-                        localStorage.setItem('tikz_cfg_'+id, JSON.stringify({ width: parseInt(widthInput.value,10), align: v }));
-                    });
-                    // Drag to reorder
-                    card.setAttribute('draggable','true');
-                    card.addEventListener('dragstart', (e)=>{ e.dataTransfer.setData('text/plain', id); });
-                    card.addEventListener('dragover', (e)=>{ e.preventDefault(); });
-                    card.addEventListener('drop', (e)=>{ e.preventDefault(); const fromId = e.dataTransfer.getData('text/plain'); const from = document.querySelector(`.tikz-card[data-id="${fromId}"]`); if(from && from!==card){ card.parentNode.insertBefore(from, card); }});
-                });
 
                 // Hover -> highlight mapping
                 let decorations = [];
