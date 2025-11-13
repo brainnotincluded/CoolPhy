@@ -15,454 +15,797 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/login": {
-            "post": {
-                "description": "Returns JWT token for valid credentials",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Login",
-                "parameters": [
-                    {
-                        "description": "Login payload",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.loginPayload"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/auth/register": {
             "post": {
-                "description": "Create a user and return JWT token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Register a new user",
-                "parameters": [
-                    {
-                        "description": "Register payload",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.registerPayload"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
+                "description": "Register new user account",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["auth"],
+                "summary": "Register user",
+                "parameters": [{
+                    "description": "User credentials",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
             }
         },
-        "/lectures": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "lectures"
-                ],
-                "summary": "List lectures",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Lecture"
-                            }
-                        }
-                    }
-                }
+        "/auth/login": {
+            "post": {
+                "description": "Login and receive JWT token",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["auth"],
+                "summary": "User login",
+                "parameters": [{
+                    "description": "Login credentials",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "description": "Logout (client-side token removal for JWT)",
+                "produces": ["application/json"],
+                "tags": ["auth"],
+                "summary": "User logout",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/password/reset": {
+            "post": {
+                "description": "Request password reset email",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["auth"],
+                "summary": "Password reset",
+                "parameters": [{
+                    "description": "Email",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/password/change": {
+            "post": {
+                "description": "Change user password",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["auth"],
+                "summary": "Change password",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "description": "Password data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
             }
         },
         "/profile": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "profile"
-                ],
+                "description": "Get current user profile",
+                "produces": ["application/json"],
+                "tags": ["profile"],
                 "summary": "Get profile",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            },
+            "put": {
+                "description": "Update user profile",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["profile"],
+                "summary": "Update profile",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "description": "Profile data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/profile/stats": {
+            "get": {
+                "description": "Get user stats and progress",
+                "produces": ["application/json"],
+                "tags": ["profile"],
+                "summary": "Get profile stats",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/lectures": {
+            "get": {
+                "description": "List all lectures with optional filters",
+                "produces": ["application/json"],
+                "tags": ["lectures"],
+                "summary": "List lectures",
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/lectures/{id}": {
+            "get": {
+                "description": "Get lecture by ID",
+                "produces": ["application/json"],
+                "tags": ["lectures"],
+                "summary": "Get lecture",
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Lecture ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/lectures/{id}/complete": {
+            "post": {
+                "description": "Mark lecture as completed/studied",
+                "produces": ["application/json"],
+                "tags": ["lectures"],
+                "summary": "Complete lecture",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Lecture ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/lectures/{id}/notes": {
+            "get": {
+                "description": "Get user notes for lecture",
+                "produces": ["application/json"],
+                "tags": ["notes"],
+                "summary": "Get lecture notes",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Lecture ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            },
+            "post": {
+                "description": "Create note for lecture",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["notes"],
+                "summary": "Create lecture note",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Lecture ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                },{
+                    "description": "Note content",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
             }
         },
         "/tasks": {
             "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks"
-                ],
+                "description": "List all tasks with optional filters",
+                "produces": ["application/json"],
+                "tags": ["tasks"],
                 "summary": "List tasks",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Task"
-                            }
-                        }
-                    }
-                }
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/tasks/{id}": {
+            "get": {
+                "description": "Get task by ID",
+                "produces": ["application/json"],
+                "tags": ["tasks"],
+                "summary": "Get task",
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Task ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/tasks/{id}/solve": {
+            "post": {
+                "description": "Submit solution for task",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["tasks"],
+                "summary": "Submit solution",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Task ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                },{
+                    "description": "Solution data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/tasks/{id}/solutions": {
+            "get": {
+                "description": "Get solution history for task",
+                "produces": ["application/json"],
+                "tags": ["tasks"],
+                "summary": "Get task solutions",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Task ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/tasks/{id}/status": {
+            "put": {
+                "description": "Update task status",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["tasks"],
+                "summary": "Update task status",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Task ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                },{
+                    "description": "Status",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/solutions": {
+            "get": {
+                "description": "List all user solution attempts",
+                "produces": ["application/json"],
+                "tags": ["solutions"],
+                "summary": "List solutions",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/solutions/{id}": {
+            "get": {
+                "description": "Get specific solution attempt",
+                "produces": ["application/json"],
+                "tags": ["solutions"],
+                "summary": "Get solution",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Solution ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            },
+            "put": {
+                "description": "Update solution attempt",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["solutions"],
+                "summary": "Update solution",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Solution ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                },{
+                    "description": "Solution data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            },
+            "delete": {
+                "description": "Delete solution attempt",
+                "produces": ["application/json"],
+                "tags": ["solutions"],
+                "summary": "Delete solution",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Solution ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
             }
         },
         "/topics": {
             "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "topics"
-                ],
+                "description": "List all topics",
+                "produces": ["application/json"],
+                "tags": ["topics"],
                 "summary": "List topics",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Topic"
-                            }
-                        }
-                    }
-                }
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/topics/tree": {
+            "get": {
+                "description": "Get topics in hierarchical tree structure",
+                "produces": ["application/json"],
+                "tags": ["topics"],
+                "summary": "Get topics tree",
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/topics/{id}": {
+            "get": {
+                "description": "Get topic by ID",
+                "produces": ["application/json"],
+                "tags": ["topics"],
+                "summary": "Get topic",
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Topic ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/professor-chat": {
+            "post": {
+                "description": "Ask AI professor a question",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["professor-chat"],
+                "summary": "Ask professor",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "description": "Question",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/professor-chat/history": {
+            "get": {
+                "description": "Get chat history with AI professor",
+                "produces": ["application/json"],
+                "tags": ["professor-chat"],
+                "summary": "Get chat history",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/professor-chat/{id}": {
+            "get": {
+                "description": "Get specific chat message",
+                "produces": ["application/json"],
+                "tags": ["professor-chat"],
+                "summary": "Get chat message",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Message ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/notifications": {
+            "get": {
+                "description": "Get all user notifications",
+                "produces": ["application/json"],
+                "tags": ["notifications"],
+                "summary": "List notifications",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/notifications/{id}/read": {
+            "put": {
+                "description": "Mark notification as read",
+                "produces": ["application/json"],
+                "tags": ["notifications"],
+                "summary": "Mark notification read",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Notification ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/history/tasks": {
+            "get": {
+                "description": "Get user task history",
+                "produces": ["application/json"],
+                "tags": ["history"],
+                "summary": "Task history",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/history/lectures": {
+            "get": {
+                "description": "Get user lecture history",
+                "produces": ["application/json"],
+                "tags": ["history"],
+                "summary": "Lecture history",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/history/profile": {
+            "get": {
+                "description": "Get user activity log",
+                "produces": ["application/json"],
+                "tags": ["history"],
+                "summary": "Profile history",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/leaderboard": {
+            "get": {
+                "description": "Get user leaderboard",
+                "produces": ["application/json"],
+                "tags": ["leaderboard"],
+                "summary": "Leaderboard",
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/achievements": {
+            "get": {
+                "description": "Get user achievements",
+                "produces": ["application/json"],
+                "tags": ["achievements"],
+                "summary": "Get achievements",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/admin": {
+            "get": {
+                "description": "Admin dashboard with stats",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Admin dashboard",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/admin/logs": {
+            "get": {
+                "description": "View system logs",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Admin logs",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
             }
         },
         "/admin/lectures": {
+            "get": {
+                "description": "Admin lectures list",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Admin lectures",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "admin"
-                ],
+                "description": "Create new lecture",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["admin"],
                 "summary": "Create lecture",
-                "parameters": [
-                    {
-                        "description": "Lecture",
-                        "name": "lecture",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Lecture"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Lecture"
-                        }
-                    }
-                }
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "description": "Lecture data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/admin/lectures/{id}": {
+            "put": {
+                "description": "Update lecture",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Update lecture",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Lecture ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                },{
+                    "description": "Lecture data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            },
+            "delete": {
+                "description": "Delete lecture",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Delete lecture",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Lecture ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
             }
         },
         "/admin/tasks": {
+            "get": {
+                "description": "Admin tasks list",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Admin tasks",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "admin"
-                ],
+                "description": "Create new task",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["admin"],
                 "summary": "Create task",
-                "parameters": [
-                    {
-                        "description": "Task",
-                        "name": "task",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Task"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Task"
-                        }
-                    }
-                }
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "description": "Task data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            }
+        },
+        "/admin/tasks/{id}": {
+            "put": {
+                "description": "Update task",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Update task",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Task ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                },{
+                    "description": "Task data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            },
+            "delete": {
+                "description": "Delete task",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Delete task",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Task ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
             }
         },
         "/admin/topics": {
+            "get": {
+                "description": "Admin topics list",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Admin topics",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
+            },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "admin"
-                ],
+                "description": "Create new topic",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["admin"],
                 "summary": "Create topic",
-                "parameters": [
-                    {
-                        "description": "Topic",
-                        "name": "topic",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Topic"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Topic"
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "handlers.loginPayload": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "description": "Topic data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
             }
         },
-        "handlers.registerPayload": {
-            "type": "object",
-            "required": [
-                "email",
-                "name",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "minLength": 2
-                },
-                "password": {
-                    "type": "string",
-                    "minLength": 6
-                }
+        "/admin/topics/{id}": {
+            "put": {
+                "description": "Update topic",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Update topic",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Topic ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                },{
+                    "description": "Topic data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            },
+            "delete": {
+                "description": "Delete topic",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Delete topic",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "Topic ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
             }
         },
-        "models.Lecture": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "subject": {
-                    "type": "string"
-                },
-                "content_latex": {
-                    "type": "string"
-                },
-                "summary": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "level": {
-                    "type": "string"
-                },
-                "author_id": {
-                    "type": "integer"
-                },
-                "view_count": {
-                    "type": "integer"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
+        "/admin/users": {
+            "get": {
+                "description": "List all users",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "List users",
+                "security": [{"BearerAuth": []}],
+                "responses": {"200": {"description": "OK"}}
             }
         },
-        "models.Task": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "description_latex": {
-                    "type": "string"
-                },
-                "subject": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "level": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "solution_latex": {
-                    "type": "string"
-                },
-                "hint_latex": {
-                    "type": "string"
-                },
-                "points": {
-                    "type": "integer"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
+        "/admin/users/{id}": {
+            "get": {
+                "description": "Get user by ID",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Get user",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "User ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
+            },
+            "put": {
+                "description": "Update user",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Update user",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "User ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                },{
+                    "description": "User data",
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"type": "object"}
+                }],
+                "responses": {"200": {"description": "OK"}}
+            },
+            "delete": {
+                "description": "Delete user",
+                "produces": ["application/json"],
+                "tags": ["admin"],
+                "summary": "Delete user",
+                "security": [{"BearerAuth": []}],
+                "parameters": [{
+                    "type": "integer",
+                    "description": "User ID",
+                    "name": "id",
+                    "in": "path",
+                    "required": true
+                }],
+                "responses": {"200": {"description": "OK"}}
             }
         },
-        "models.Topic": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "subject": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "integer"
-                },
-                "level": {
-                    "type": "integer"
-                },
-                "order_index": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
+        "/ping": {
+            "get": {
+                "description": "Server status check",
+                "produces": ["application/json"],
+                "tags": ["technical"],
+                "summary": "Ping",
+                "responses": {"200": {"description": "OK"}}
             }
         }
     },
@@ -470,7 +813,8 @@ const docTemplate = `{
         "BearerAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header"
+            "in": "header",
+            "description": "Bearer token authentication. Format: Bearer {token}"
         }
     }
 }`
@@ -482,7 +826,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api/v1",
 	Schemes:          []string{"http"},
 	Title:            "CoolPhy API",
-	Description:      "Backend API for educational platform (lectures, tasks, topics, auth)",
+	Description:      "Backend API for educational platform - lectures, tasks, topics, auth, AI professor",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }
