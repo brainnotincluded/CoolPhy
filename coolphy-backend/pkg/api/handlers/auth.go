@@ -1248,9 +1248,7 @@ func CompleteLecture() gin.HandlerFunc {
 			c.JSON(http.StatusNotFound, gin.H{"error": "lecture not found"})
 			return
 		}
-		userID, _ := c.Get("userID")
-		// Record completion by creating a note or updating user stats
-		// For now, just increment view count and return success
+		// Record completion by incrementing view count
 		db.Get().Model(&lect).Update("view_count", lect.ViewCount+1)
 		c.JSON(http.StatusOK, gin.H{"message": "lecture marked as complete"})
 	}
@@ -1284,7 +1282,7 @@ func buildTopicTree(topics []models.Topic) []map[string]interface{} {
 	for _, topic := range topics {
 		node := map[string]interface{}{
 			"id":          topic.ID,
-			"name":        topic.Name,
+			"title":       topic.Title,
 			"subject":     topic.Subject,
 			"description": topic.Description,
 			"parent_id":   topic.ParentID,
@@ -1374,7 +1372,7 @@ func UpdateSolution() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid input"})
 			return
 		}
-		attempt.UserAnswer = req.UserAnswer
+		attempt.Answer = req.Answer
 		attempt.Status = req.Status
 		if err := db.Get().Save(&attempt).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update"})
