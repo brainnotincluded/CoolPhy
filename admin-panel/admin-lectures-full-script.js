@@ -339,8 +339,503 @@ function renderTikzCanvas() {
         tikzCtx.lineTo(w * 2, i - h);
         tikzCtx.stroke();
     }
+    
+    // Draw all objects
+    tikzObjects.forEach((obj, idx) => {
+        tikzCtx.strokeStyle = obj.color || '#000';
+        tikzCtx.lineWidth = (obj.strokeWidth || obj.width || 1) / tikzScale;
+        tikzCtx.fillStyle = obj.fill || 'transparent';
+        
+        switch (obj.type) {
+            case 'line':
+                tikzCtx.beginPath();
+                tikzCtx.moveTo(obj.x1, obj.y1);
+                tikzCtx.lineTo(obj.x2, obj.y2);
+                tikzCtx.stroke();
+                break;
+            case 'arrow':
+                drawArrow(tikzCtx, obj.x1, obj.y1, obj.x2, obj.y2);
+                break;
+            case 'rectangle':
+                tikzCtx.strokeRect(obj.x, obj.y, obj.width, obj.height);
+                break;
+            case 'circle':
+                tikzCtx.beginPath();
+                tikzCtx.arc(obj.x, obj.y, obj.radius, 0, 2 * Math.PI);
+                tikzCtx.stroke();
+                break;
+            case 'text':
+            case 'node':
+                tikzCtx.fillStyle = obj.color;
+                tikzCtx.font = (14 / tikzScale) + 'px Arial';
+                tikzCtx.fillText(obj.text, obj.x, obj.y);
+                break;
+        }
+
+        // Draw selection handles
+        if (idx === selectedIndex) {
+            tikzCtx.save();
+            tikzCtx.fillStyle = '#0e639c';
+            const handleSize = 4 / tikzScale;
+            if (obj.type === 'line' || obj.type === 'arrow') {
+                const handles = [ {x: obj.x1, y: obj.y1}, {x: obj.x2, y: obj.y2} ];
+                handles.forEach(p => {
+                    tikzCtx.fillRect(p.x - handleSize, p.y - handleSize, handleSize*2, handleSize*2);
+                });
+            } else if (obj.type === 'circle') {
+                tikzCtx.fillRect(obj.x - handleSize, obj.y - handleSize, handleSize*2, handleSize*2);
+            }
+            tikzCtx.restore();
+        }
+    });
     tikzCtx.restore();
 }
+
+function screenToWorld(clientX, clientY) {
+    const rect = tikzCanvas.getBoundingClientRect();
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
+    const w = tikzCanvasWidth;
+    const h = tikzCanvasHeight;
+    const x = (canvasX - w/2) / tikzScale - tikzOffsetX + w/2;
+    const y = (canvasY - h/2) / tikzScale - tikzOffsetY + h/2;
+    return { x, y };
+}
+
+function findNearestObject(x, y, maxDist = 20) {
+    let bestIndex = null;
+    let bestDist = maxDist;
+    tikzObjects.forEach((obj, idx) => {
+        const d = distanceToShape(obj, x, y);
+        if (d < bestDist) {
+            bestDist = d;
+            bestIndex = idx;
+        }
+    });
+    return bestIndex;
+}
+
+function snapPoint(x, y, ignoreIndex = null) {
+    const snapDist = 10;
+    let bestX = x;
+    let bestY = y;
+    let bestD = snapDist;
+    tikzObjects.forEach((obj, idx) => {
+        if (idx === ignoreIndex) return;
+        switch (obj.type) {
+            case 'line':
+            case 'arrow': {
+                const pts = [ {x: obj.x1, y: obj.y1}, {x: obj.x2, y: obj.y2} ];
+                pts.forEach(p => {
+                    const d = Math.hypot(x - p.x, y - p.y);
+                    if (d < bestD) { bestD = d; bestX = p.x; bestY = p.y; }
+                });
+                break;
+            }
+            case 'circle': {
+                const d = Math.hypot(x - obj.x, y - obj.y);
+                if (d < bestD) { bestD = d; bestX = obj.x; bestY = obj.y; }
+                break;
+            }
+            case 'rectangle': {
+                const corners = [
+                    {x: obj.x, y: obj.y},
+                    {x: obj.x + obj.width, y: obj.y},
+                    {x: obj.x, y: obj.y + obj.height},
+                    {x: obj.x + obj.width, y: obj.y + obj.height},
+                ];
+                corners.forEach(p => {
+                    const d = Math.hypot(x - p.x, y - p.y);
+                    if (d < bestD) { bestD = d; bestX = p.x; bestY = p.y; }
+                });
+                break;
+            }
+            case 'text':
+            case 'node': {
+                const d = Math.hypot(x - obj.x, y - obj.y);
+                if (d < bestD) { bestD = d; bestX = obj.x; bestY = obj.y; }
+                break;
+            }
+        }
+    });
+    return { x: bestX, y: bestY };
+}
+
+function drawArrow(ctx, fromX, fromY, toX, toY) {
+    const headlen = 10;
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+function distanceToShape(obj, px, py) {
+    function distPointToSegment(x1, y1, x2, y2, x0, y0) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        if (dx === 0 && dy === 0) return Math.hypot(x0 - x1, y0 - y1);
+        const t = ((x0 - x1) * dx + (y0 - y1) * dy) / (dx * dx + dy * dy);
+        const clamped = Math.max(0, Math.min(1, t));
+        const nx = x1 + clamped * dx;
+        const ny = y1 + clamped * dy;
+        return Math.hypot(x0 - nx, y0 - ny);
+    }
+    switch (obj.type) {
+        case 'line':
+        case 'arrow':
+            return distPointToSegment(obj.x1, obj.y1, obj.x2, obj.y2, px, py);
+        case 'rectangle': {
+            const left = obj.x;
+            const right = obj.x + obj.width;
+            const top = obj.y;
+            const bottom = obj.y + obj.height;
+            const dx = Math.max(left - px, 0, px - right);
+            const dy = Math.max(top - py, 0, py - bottom);
+            return Math.hypot(dx, dy);
+        }
+        case 'circle':
+            return Math.abs(Math.hypot(px - obj.x, py - obj.y) - obj.radius);
+        case 'text':
+        case 'node':
+            return Math.hypot(px - obj.x, py - obj.y);
+        default:
+            return Infinity;
+    }
+}
+
+// TikZ interaction variables
+let currentTool = 'select';
+let isDrawing = false;
+let startX, startY;
+let touchAllowed = false;
+let isPanning = false;
+let panStartX, panStartY;
+
+// Tool selection
+const toolButtons = document.querySelectorAll('.tool-btn[data-tool]');
+toolButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        toolButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTool = btn.dataset.tool;
+    });
+});
+
+// Touch toggle
+document.getElementById('toggle-touch').addEventListener('click', () => {
+    touchAllowed = !touchAllowed;
+    document.getElementById('toggle-touch').textContent = 'Touch: ' + (touchAllowed ? 'On' : 'Off');
+});
+
+// Undo/Redo
+function undo() {
+    if (tikzHistoryIndex > 0) {
+        tikzHistoryIndex--;
+        tikzObjects = JSON.parse(JSON.stringify(tikzHistory[tikzHistoryIndex]));
+        renderTikzCanvas();
+    }
+}
+function redo() {
+    if (tikzHistoryIndex < tikzHistory.length - 1) {
+        tikzHistoryIndex++;
+        tikzObjects = JSON.parse(JSON.stringify(tikzHistory[tikzHistoryIndex]));
+        renderTikzCanvas();
+    }
+}
+document.getElementById('undo-btn').addEventListener('click', undo);
+document.getElementById('redo-btn').addEventListener('click', redo);
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        redo();
+    }
+});
+
+// Zoom
+function setZoom(scale) {
+    tikzScale = Math.max(0.1, Math.min(10, scale));
+    renderTikzCanvas();
+    document.getElementById('zoom-reset').textContent = Math.round(tikzScale * 100) + '%';
+}
+document.getElementById('zoom-in').addEventListener('click', () => setZoom(tikzScale * 1.2));
+document.getElementById('zoom-out').addEventListener('click', () => setZoom(tikzScale / 1.2));
+document.getElementById('zoom-reset').addEventListener('click', () => { setZoom(1); tikzOffsetX = 0; tikzOffsetY = 0; renderTikzCanvas(); });
+tikzCanvas.addEventListener('wheel', (e) => {
+    if (e.metaKey || e.ctrlKey) {
+        e.preventDefault();
+        setZoom(tikzScale * (e.deltaY < 0 ? 1.1 : 0.9));
+    }
+});
+
+// Pan with shift+drag or middle mouse button
+tikzCanvas.addEventListener('mousedown', (e) => {
+    if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
+        isPanning = true;
+        panStartX = e.offsetX;
+        panStartY = e.offsetY;
+        e.preventDefault();
+    }
+});
+tikzCanvas.addEventListener('mousemove', (e) => {
+    if (isPanning) {
+        tikzOffsetX += (e.offsetX - panStartX) / tikzScale;
+        tikzOffsetY += (e.offsetY - panStartY) / tikzScale;
+        panStartX = e.offsetX;
+        panStartY = e.offsetY;
+        renderTikzCanvas();
+    }
+});
+tikzCanvas.addEventListener('mouseup', (e) => {
+    if (e.button === 1 || e.button === 0) {
+        isPanning = false;
+    }
+});
+
+// Fullscreen
+document.getElementById('fullscreen-btn').addEventListener('click', () => {
+    const tikzTab = document.getElementById('tikz-visual');
+    if (!document.fullscreenElement) {
+        tikzTab.requestFullscreen().catch(err => console.error(err));
+    } else {
+        document.exitFullscreen();
+    }
+});
+document.addEventListener('fullscreenchange', () => {
+    resizeTikzCanvas();
+});
+
+// Pointer events for drawing
+const pointerDown = (e) => {
+    if (e.pointerType === 'touch' && !touchAllowed) return;
+    if (isPanning) return;
+    
+    if (currentTool === 'select') {
+        const { x, y } = screenToWorld(e.clientX, e.clientY);
+        const idx = findNearestObject(x, y, 20);
+        if (idx === null) {
+            selectedIndex = null;
+            dragInfo = null;
+            renderTikzCanvas();
+            return;
+        }
+        selectedIndex = idx;
+        const obj = tikzObjects[idx];
+        const handleRadius = 10;
+        let handle = null;
+        if (obj.type === 'line' || obj.type === 'arrow') {
+            const d1 = Math.hypot(x - obj.x1, y - obj.y1);
+            const d2 = Math.hypot(x - obj.x2, y - obj.y2);
+            if (d1 < handleRadius && d1 <= d2) handle = 'line-start';
+            else if (d2 < handleRadius) handle = 'line-end';
+        } else if (obj.type === 'circle') {
+            const d = Math.hypot(x - obj.x, y - obj.y);
+            if (d < handleRadius) handle = 'circle-center';
+        }
+        if (handle) {
+            dragInfo = { mode: 'handle', handle, index: idx };
+        } else {
+            dragInfo = { mode: 'move', index: idx, startX: x, startY: y, original: JSON.parse(JSON.stringify(obj)) };
+        }
+        renderTikzCanvas();
+        return;
+    }
+    
+    if (e.button === 1 || e.shiftKey) return;
+    const { x, y } = screenToWorld(e.clientX, e.clientY);
+    startX = x;
+    startY = y;
+    isDrawing = true;
+    if (currentTool === 'text') {
+        const text = prompt('Enter text:');
+        if (text) {
+            tikzObjects.push({ type: 'text', x: startX, y: startY, text, color: document.getElementById('stroke-color').value });
+            renderTikzCanvas();
+        }
+        isDrawing = false;
+    }
+};
+tikzCanvas.addEventListener('pointerdown', pointerDown);
+
+const pointerMove = (e) => {
+    if (e.pointerType === 'touch' && !touchAllowed) return;
+    if (isPanning) return;
+    
+    if (currentTool === 'select') {
+        if (!dragInfo) return;
+        const { x, y } = screenToWorld(e.clientX, e.clientY);
+        const obj = tikzObjects[dragInfo.index];
+        if (!obj) return;
+        if (dragInfo.mode === 'handle') {
+            const snapped = snapPoint(x, y, dragInfo.index);
+            if (dragInfo.handle === 'line-start') {
+                obj.x1 = snapped.x; obj.y1 = snapped.y;
+            } else if (dragInfo.handle === 'line-end') {
+                obj.x2 = snapped.x; obj.y2 = snapped.y;
+            } else if (dragInfo.handle === 'circle-center') {
+                obj.x = snapped.x; obj.y = snapped.y;
+            }
+        } else if (dragInfo.mode === 'move') {
+            const dx = x - dragInfo.startX;
+            const dy = y - dragInfo.startY;
+            const base = dragInfo.original;
+            switch (base.type) {
+                case 'line':
+                case 'arrow':
+                    obj.x1 = base.x1 + dx; obj.y1 = base.y1 + dy;
+                    obj.x2 = base.x2 + dx; obj.y2 = base.y2 + dy;
+                    break;
+                case 'rectangle':
+                    obj.x = base.x + dx; obj.y = base.y + dy;
+                    break;
+                case 'circle':
+                    obj.x = base.x + dx; obj.y = base.y + dy;
+                    break;
+                case 'text':
+                case 'node':
+                    obj.x = base.x + dx; obj.y = base.y + dy;
+                    break;
+            }
+        }
+        renderTikzCanvas();
+        return;
+    }
+    
+    if (!isDrawing) return;
+    const { x: currentX, y: currentY } = screenToWorld(e.clientX, e.clientY);
+    renderTikzCanvas();
+    const w = tikzCanvasWidth;
+    const h = tikzCanvasHeight;
+    tikzCtx.save();
+    tikzCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    tikzCtx.translate(w/2, h/2);
+    tikzCtx.scale(tikzScale, tikzScale);
+    tikzCtx.translate(-w/2 + tikzOffsetX, -h/2 + tikzOffsetY);
+    tikzCtx.strokeStyle = document.getElementById('stroke-color').value;
+    tikzCtx.lineWidth = document.getElementById('stroke-width').value / tikzScale;
+    tikzCtx.fillStyle = document.getElementById('fill-color').value;
+    switch (currentTool) {
+        case 'line':
+            tikzCtx.beginPath(); tikzCtx.moveTo(startX, startY); tikzCtx.lineTo(currentX, currentY); tikzCtx.stroke();
+            break;
+        case 'arrow':
+            drawArrow(tikzCtx, startX, startY, currentX, currentY); break;
+        case 'rectangle':
+            tikzCtx.strokeRect(startX, startY, currentX - startX, currentY - startY); break;
+        case 'circle':
+            const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+            tikzCtx.beginPath(); tikzCtx.arc(startX, startY, radius, 0, 2 * Math.PI); tikzCtx.stroke();
+            break;
+    }
+    tikzCtx.restore();
+};
+tikzCanvas.addEventListener('pointermove', pointerMove);
+
+const pointerUp = (e) => {
+    if (e.pointerType === 'touch' && !touchAllowed) return;
+    if (isPanning) return;
+    
+    if (currentTool === 'select') {
+        if (dragInfo) {
+            saveHistory();
+            dragInfo = null;
+        }
+        return;
+    }
+    
+    if (!isDrawing) return;
+    const { x: endX, y: endY } = screenToWorld(e.clientX, e.clientY);
+    const strokeColor = document.getElementById('stroke-color').value;
+    const strokeWidth = document.getElementById('stroke-width').value;
+    const fillColor = document.getElementById('fill-color').value;
+    if (currentTool === 'eraser') {
+        const threshold = 15;
+        let erased = false;
+        for (let i = tikzObjects.length - 1; i >= 0; i--) {
+            if (distanceToShape(tikzObjects[i], endX, endY) <= threshold) {
+                tikzObjects.splice(i, 1);
+                erased = true;
+                break;
+            }
+        }
+        if (erased) {
+            saveHistory();
+        }
+    } else {
+        switch (currentTool) {
+            case 'line':
+                tikzObjects.push({ type:'line', x1:startX, y1:startY, x2:endX, y2:endY, color:strokeColor, width:strokeWidth }); 
+                saveHistory();
+                break;
+            case 'arrow':
+                tikzObjects.push({ type:'arrow', x1:startX, y1:startY, x2:endX, y2:endY, color:strokeColor, width:strokeWidth }); 
+                saveHistory();
+                break;
+            case 'rectangle':
+                tikzObjects.push({ type:'rectangle', x:startX, y:startY, width:endX-startX, height:endY-startY, color:strokeColor, strokeWidth:strokeWidth, fill:fillColor }); 
+                saveHistory();
+                break;
+            case 'circle':
+                const radius = Math.sqrt(Math.pow(endX-startX,2)+Math.pow(endY-startY,2));
+                tikzObjects.push({ type:'circle', x:startX, y:startY, radius, color:strokeColor, strokeWidth:strokeWidth, fill:fillColor }); 
+                saveHistory();
+                break;
+            case 'node':
+                const nodeText = prompt('Enter node text:');
+                if (nodeText) { 
+                    tikzObjects.push({ type:'node', x:startX, y:startY, text:nodeText, color:strokeColor }); 
+                    saveHistory();
+                }
+                break;
+        }
+    }
+    isDrawing = false; renderTikzCanvas();
+};
+tikzCanvas.addEventListener('pointerup', pointerUp);
+tikzCanvas.addEventListener('pointercancel', pointerUp);
+
+// Template selector
+const templateSelect = document.getElementById('template-select');
+templateSelect.addEventListener('change', () => {
+    const t = templateSelect.value; if (!t) return; templateSelect.value='';
+    const cw = tikzCanvasWidth;
+    const ch = tikzCanvasHeight;
+    const cx = cw / 2, cy = ch / 2;
+    if (t === 'surface-solid') {
+        tikzObjects.push({ type:'rectangle', x:20, y:cy+40, width:cw-40, height:8, color:'#666', strokeWidth:2, fill:'#666' });
+    } else if (t === 'surface-water') {
+        const seg=40; const amp=6; const y=cy+40; let pts=[]; for(let i=20;i<cw-20;i+=seg){ pts.push({x:i,y:y+Math.sin(i/10)*amp}); }
+        for(let i=0;i<pts.length-1;i++){ tikzObjects.push({ type:'line', x1:pts[i].x, y1:pts[i].y, x2:pts[i+1].x, y2:pts[i+1].y, color:'#1e90ff', width:2 }); }
+    } else if (t === 'spring') {
+        const x0=100,y0=cy, turns=10, pitch=10, amp=10; let prev={x:x0,y:y0};
+        for(let i=1;i<=turns;i++){ const x=x0+i*pitch; const y=y0+(i%2?amp:-amp); tikzObjects.push({ type:'line', x1:prev.x, y1:prev.y, x2:x, y2:y, color:'#888', width:2 }); prev={x,y}; }
+    } else if (t === 'pulley-fixed') {
+        tikzObjects.push({ type:'circle', x:cx-40, y:cy-20, radius:20, color:'#444', strokeWidth:2, fill:'#eee' });
+        tikzObjects.push({ type:'circle', x:cx+40, y:cy-20, radius:20, color:'#444', strokeWidth:2, fill:'#eee' });
+        tikzObjects.push({ type:'line', x1:cx-40, y1:cy-40, x2:cx+40, y2:cy-40, color:'#444', width:3 });
+    } else if (t === 'pulley-movable') {
+        tikzObjects.push({ type:'circle', x:cx, y:cy-20, radius:22, color:'#444', strokeWidth:2, fill:'#eee' });
+        tikzObjects.push({ type:'circle', x:cx, y:cy+60, radius:22, color:'#444', strokeWidth:2, fill:'#eee' });
+        tikzObjects.push({ type:'line', x1:cx, y1:cy-42, x2:cx, y2:cy+38, color:'#444', width:3 });
+    } else if (t === 'balloon') {
+        tikzObjects.push({ type:'circle', x:cx, y:cy, radius:30, color:'#ff4d4f', strokeWidth:2, fill:'#ff6b6d' });
+        tikzObjects.push({ type:'line', x1:cx, y1:cy+30, x2:cx, y2:cy+80, color:'#ff6b6d', width:2 });
+    }
+    renderTikzCanvas();
+});
 
 function saveHistory() {
     tikzHistoryIndex++;
