@@ -30,6 +30,7 @@ func Register(r *gin.Engine, cfg config.Config) {
 
 		api.GET("/lectures", handlers.ListLectures())
 		api.GET("/lectures/:id", handlers.GetLecture())
+		api.GET("/videos/:id/stream", handlers.StreamVideo(cfg))
 		api.GET("/tasks", handlers.ListTasks())
 		api.GET("/tasks/:id", handlers.GetTask())
 		api.GET("/topics", handlers.ListTopics())
@@ -83,6 +84,7 @@ func Register(r *gin.Engine, cfg config.Config) {
 				admin.GET("/topics", handlers.AdminTopics())
 				// Admin CRUD
 				admin.POST("/lectures", handlers.CreateLecture())
+				admin.POST("/videos", handlers.UploadVideo(cfg))
 				admin.POST("/tasks", handlers.CreateTask())
 				admin.POST("/topics", handlers.CreateTopic())
 				// Admin update/delete

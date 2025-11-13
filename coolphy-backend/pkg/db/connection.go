@@ -31,6 +31,7 @@ func autoMigrate() error {
 		&models.User{},
 		&models.Lecture{},
 		&models.Task{},
+		&models.VideoAsset{},
 		&models.Topic{},
 		&models.SolutionAttempt{},
 		&models.Note{},

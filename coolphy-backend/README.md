@@ -23,10 +23,14 @@ API
 - GET /api/v1/profile (Authorization: Bearer <token>)
 - Admin (Bearer token with role=admin):
   - POST /api/v1/admin/lectures
+  - POST /api/v1/admin/videos (multipart upload, field: file)
   - POST /api/v1/admin/tasks
   - POST /api/v1/admin/topics
+- Public video streaming:
+  - GET /api/v1/videos/{id}/stream
 
 Notes
 - Models use GORM with Postgres-specific types (text[], jsonb)
 - AutoMigrate runs on startup
 - Adjust rate limit via RATE_LIMIT env (e.g., 100-M)
+- Uploaded files land in UPLOAD_DIR (default: ./uploads); ensure the folder is writable in production.

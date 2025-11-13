@@ -25,6 +25,8 @@ DELETE /api/lectures/{id} — delete lecture
 POST /api/lectures/{id}/complete — mark as studied
 GET /api/lectures/{id}/notes — get all user notes for lecture
 POST /api/lectures/{id}/notes — add note for lecture
+POST /api/admin/videos — upload lecture video (multipart/form-data, field `file`)
+GET /api/videos/{id}/stream — stream uploaded lecture video
 
 ## Problems/Tasks
 GET /api/tasks — problem/task catalog, filtering, search

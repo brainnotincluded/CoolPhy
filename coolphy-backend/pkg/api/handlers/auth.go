@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -241,9 +242,12 @@ func ChangePassword() gin.HandlerFunc {
 func ListLectures() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var items []models.Lecture
-		if err := db.Get().Limit(50).Order("id desc").Find(&items).Error; err != nil {
+		if err := db.Get().Preload("VideoAsset").Limit(50).Order("id desc").Find(&items).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
 			return
+		}
+		for i := range items {
+			attachVideoAssetURL(&items[i])
 		}
 		c.JSON(http.StatusOK, items)
 	}
@@ -261,7 +265,7 @@ func GetLecture() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var item models.Lecture
-		if err := db.Get().First(&item, id).Error; err != nil {
+		if err := db.Get().Preload("VideoAsset").First(&item, id).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				c.JSON(http.StatusNotFound, gin.H{"error": "lecture not found"})
 				return
@@ -269,6 +273,7 @@ func GetLecture() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
 			return
 		}
+		attachVideoAssetURL(&item)
 		c.JSON(http.StatusOK, item)
 	}
 }
@@ -375,6 +380,9 @@ func CreateLecture() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "create failed"})
 			return
 		}
+		if err := db.Get().Preload("VideoAsset").First(&in, in.ID).Error; err == nil {
+			attachVideoAssetURL(&in)
+		}
 		c.JSON(http.StatusCreated, in)
 	}
 }
@@ -411,7 +419,10 @@ func UpdateLecture() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
 			return
 		}
-		c.JSON(http.StatusOK, in)
+		if err := db.Get().Preload("VideoAsset").First(&existing, id).Error; err == nil {
+			attachVideoAssetURL(&existing)
+		}
+		c.JSON(http.StatusOK, existing)
 	}
 }
 
@@ -1140,9 +1151,12 @@ func AdminDashboard() gin.HandlerFunc {
 func AdminLectures() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var lectures []models.Lecture
-		if err := db.Get().Order("created_at desc").Limit(100).Find(&lectures).Error; err != nil {
+		if err := db.Get().Preload("VideoAsset").Order("created_at desc").Limit(100).Find(&lectures).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
 			return
+		}
+		for i := range lectures {
+			attachVideoAssetURL(&lectures[i])
 		}
 		c.JSON(http.StatusOK, lectures)
 	}
@@ -1425,4 +1439,11 @@ func AdminLogs() gin.HandlerFunc {
 			"message": "Log viewing not yet implemented",
 		})
 	}
+}
+
+func attachVideoAssetURL(lecture *models.Lecture) {
+	if lecture == nil || lecture.VideoAsset == nil {
+		return
+	}
+	lecture.VideoAsset.StreamURL = fmt.Sprintf("/api/v1/videos/%d/stream", lecture.VideoAsset.ID)
 }

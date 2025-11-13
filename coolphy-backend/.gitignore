@@ -23,6 +23,9 @@ vendor/
 logs/
 *.log
 
+# Uploaded assets
+uploads/
+
 # Coverage
 coverage/
 *.coverprofile

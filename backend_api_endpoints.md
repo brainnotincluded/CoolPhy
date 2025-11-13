@@ -25,6 +25,8 @@ DELETE /api/lectures/{id}            — удалить лекцию
 POST   /api/lectures/{id}/complete   — отметить как изученную
 GET    /api/lectures/{id}/notes      — все заметки пользователя
 POST   /api/lectures/{id}/notes      — добавить заметку к лекции
+POST   /api/admin/videos             — загрузить видеофайл лекции (multipart/form-data, поле `file`)
+GET    /api/videos/{id}/stream       — потоковое воспроизведение загруженного видео
 
 ## Задачи
 GET    /api/tasks                    — каталог задач, фильтр, поиск

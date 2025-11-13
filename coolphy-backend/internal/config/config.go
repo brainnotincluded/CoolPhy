@@ -14,6 +14,7 @@ type Config struct {
 	JWTSecret string
 	RateLimit string
 	CORSAllowedOrigins string
+	UploadDir string
 }
 
 func Load() Config {
@@ -25,6 +26,7 @@ func Load() Config {
 		JWTSecret: get("JWT_SECRET", "changeme_in_prod"),
 		RateLimit: get("RATE_LIMIT", "100-M"),
 		CORSAllowedOrigins: get("CORS_ALLOWED_ORIGINS", "*"),
+		UploadDir: get("UPLOAD_DIR", "./uploads"),
 	}
 	return cfg
 }
