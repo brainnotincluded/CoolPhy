@@ -3,317 +3,641 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin: Lectures - CoolPhy</title>
+    <title>Admin: Create Lecture (Full Editor) - CoolPhy</title>
+    
+    <!-- KaTeX CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
+    
+    <!-- TikZJax -->
+    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
+    <script src="https://tikzjax.com/v1/tikzjax.js"></script>
+    
+    <!-- Monaco Editor -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Source+Serif+Pro:wght@400;600&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1e1e1e; color: #d4d4d4; min-height: 100vh; }
-        header { padding: 20px 30px; background: #252526; border-bottom: 1px solid #3e3e42; display: flex; justify-content: space-between; align-items: center; }
-        h1 { font-size: 24px; font-weight: 600; }
-        .header-actions { display: flex; gap: 10px; }
-        .btn { padding: 8px 16px; background: #0e639c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.2s; text-decoration: none; display: inline-block; }
-        .btn:hover { background: #1177bb; }
-        .btn-secondary { background: #3e3e42; }
-        .btn-secondary:hover { background: #505050; }
-        .btn-success { background: #107c10; }
-        .btn-success:hover { background: #0f6c0f; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
-        .form-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 20px; }
-        .form-section { background: #252526; border: 1px solid #3e3e42; border-radius: 6px; padding: 25px; margin-bottom: 20px; }
-        .form-section h2 { font-size: 18px; margin-bottom: 20px; color: #0e639c; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #cccccc; font-size: 14px; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; background: #1e1e1e; color: #d4d4d4; border: 1px solid #3e3e42; border-radius: 4px; font-size: 14px; font-family: inherit; }
-        .form-group textarea { font-family: 'Courier New', monospace; resize: vertical; min-height: 100px; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #0e639c; }
-        .tags-input { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 4px; min-height: 42px; }
-        .tag { padding: 4px 10px; background: #0e639c; color: white; border-radius: 3px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-        .tag-remove { cursor: pointer; font-weight: bold; }
-        .tag-input { border: none; background: transparent; color: #d4d4d4; flex: 1; min-width: 120px; outline: none; font-size: 14px; }
-        .editor-container { margin-top: 15px; border: 1px solid #3e3e42; border-radius: 4px; overflow: hidden; }
-        .editor-header { padding: 10px 15px; background: #2d2d30; border-bottom: 1px solid #3e3e42; display: flex; justify-content: space-between; align-items: center; }
-        .editor-header h3 { font-size: 14px; font-weight: 500; }
-        #monaco-content { height: 400px; min-height: 300px; }
-        .preview-box { padding: 20px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 4px; margin-top: 10px; min-height: 150px; overflow-y: auto; max-height: 500px; }
-        .form-actions { display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px; }
-        .success-message, .error-message { padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
-        .success-message { background: #107c10; color: white; }
-        .error-message { background: #5a1d1d; color: #f48771; }
-        .info-text { font-size: 12px; color: #858585; margin-top: 5px; }
-        .links-list { list-style: none; padding: 0; }
-        .link-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        .link-item input { flex: 1; }
-        .link-remove { padding: 6px 12px; background: #3e3e42; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            overflow: hidden;
+        }
+        
+        header {
+            padding: 15px 20px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        
+        .btn:hover {
+            background: #1177bb;
+        }
+        
+        .btn-secondary {
+            background: #3e3e42;
+        }
+        
+        .btn-secondary:hover {
+            background: #505050;
+        }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .editor-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #3e3e42;
+            min-width: 0;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            color: #858585;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab:hover {
+            color: #cccccc;
+        }
+        
+        .tab.active {
+            background: #1e1e1e;
+            color: #ffffff;
+            border-bottom: 2px solid #0e639c;
+        }
+        
+        .editor-content {
+            flex: 1;
+            display: none;
+            min-height: 0;
+        }
+        
+        .editor-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #monaco-editor,
+        #monaco-solution {
+            flex: 1;
+            min-height: 0;
+            height: 100%;
+            width: 100%;
+        }
+        #latex-editor,
+        #solution-editor {
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .preview-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        
+        /* Images: fixed thumbnail size; content centered with 5px inner margin */
+        #preview img {
+            width: 250px !important;           /* total box size */
+            height: 250px !important;
+            padding: 5px;                      /* inner margin around content */
+            box-sizing: border-box;
+            object-fit: contain;               /* scale to max fit inside 240x240 area */
+            display: inline-block;
+            margin: 5px;                       /* space between thumbnails */
+            vertical-align: middle;
+        }
+        
+        /* SVG/iframes (TikZ, JSXGraph, etc.) still use available width */
+        #preview svg {
+            width: 100%;
+            height: auto;
+            max-height: calc(100vh - 160px);
+            object-fit: contain;
+            display: block;
+            margin: 10px auto;
+        }
+        #preview iframe {
+            width: 100%;
+            max-height: calc(100vh - 160px);
+            display: block;
+            margin: 10px auto;
+            border: none;
+        }
+        
+        .pane-header {
+            padding: 10px 20px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #1e1e1e;
+        }
+        
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 20px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 12px;
+        }
+        .preview-controls label { color: #ccc; }
+        .preview-controls input, .preview-controls select {
+            background: #3e3e42; color: #ccc; border: 1px solid #555; border-radius: 3px; padding: 4px 6px;
+        }
+        
+        .tikz-frame {
+            display: inline-block;
+            vertical-align: top;
+            width: 100%;
+            margin: 8px;
+            background: #fff;
+            border-radius: 4px;
+        }
+        .tikz-card-ctrl {
+            position: relative;
+            margin-top: 4px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 12px;
+            color: #ccc;
+        }
+        .tikz-card-ctrl input, .tikz-card-ctrl select {
+            background: #3e3e42; color: #ccc; border: 1px solid #555; border-radius: 3px; padding: 2px 4px;
+        }
+        .tikz-card {
+            display: inline-block;
+            vertical-align: top;
+            margin: 5px; /* match image thumbnails */
+            background: transparent;
+            width: 250px !important; /* fixed thumbnail width so it doesn't eat full line */
+        }
+        
+        .tikz-frame {
+            width: 250px !important;
+            height: 250px !important;
+            overflow: hidden;
+        }
+        .tikz-frame iframe {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        /* TikZ Editor */
+        .tikz-toolbar {
+            padding: 10px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .tool-btn {
+            padding: 8px 12px;
+            background: #3e3e42;
+            color: #cccccc;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .tool-btn:hover {
+            background: #505050;
+        }
+        
+        .tool-btn.active {
+            background: #0e639c;
+            color: white;
+        }
+        
+        #tikz-canvas-container {
+            flex: 1;
+            position: relative;
+            background: #1e1e1e;
+            overflow: auto;
+        }
+        
+        #tikz-canvas-container:fullscreen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1e1e1e;
+        }
+        
+        #tikz-canvas-container:fullscreen #tikz-canvas {
+            width: 95vw !important;
+            height: 95vh !important;
+        }
+        
+        #tikz-canvas {
+            position: absolute;
+            background: white;
+            cursor: crosshair;
+            touch-action: none; /* better Apple Pencil support */
+        }
+        
+        .tikz-controls {
+            padding: 10px;
+            background: #252526;
+            border-top: 1px solid #3e3e42;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        
+        .control-group label {
+            font-size: 12px;
+            color: #cccccc;
+        }
+        
+        .control-group input,
+        .control-group select {
+            padding: 4px 8px;
+            background: #3e3e42;
+            color: #cccccc;
+            border: 1px solid #555;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        /* JSXGraph */
+        #jsxgraph-board {
+            flex: 1;
+            background: white;
+            margin: 20px;
+            border-radius: 4px;
+        }
+        
+        .graph-controls {
+            padding: 15px 20px;
+            background: #252526;
+            border-top: 1px solid #3e3e42;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .input-row input {
+            flex: 1;
+            padding: 6px 10px;
+            background: #3e3e42;
+            color: #cccccc;
+            border: 1px solid #555;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 10px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #3e3e42;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .error {
+            color: #f48771;
+            padding: 10px;
+            background: #5a1d1d;
+            border-radius: 4px;
+            margin: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .code-output {
+            background: #1e1e1e;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 4px;
+            border: 1px solid #3e3e42;
+        }
+        
+        .code-output pre {
+            color: #d4d4d4;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        /* Preview hover mapping */
+        .src:hover, .tikz-card:hover { outline: 2px solid #0e639c; outline-offset: 2px; background: rgba(14,99,156,0.08); }
+        /* Monaco highlight */
+        .monaco-editor .code-highlight { background: rgba(14,99,156,0.35); border-bottom: 1px solid #0e639c; }
+        
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4e4e4e;
+        }
+
+        /* Video upload styles */
+        .upload-status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #cccccc;
+        }
+        #video-preview {
+            margin-top: 10px;
+            max-width: 100%;
+            border-radius: 4px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>🎓 Create/Edit Lecture</h1>
+        <h1>🎓 Create Lecture (Full Editor)</h1>
         <div class="header-actions">
-            <a href="index.html" class="btn btn-secondary">← Dashboard</a>
-            <a href="admin-tasks.html" class="btn btn-secondary">Tasks</a>
-            <a href="auth.html" class="btn btn-secondary" id="login-link">Login</a>
+            <button class="btn" id="save-lecture-btn" style="background:#107c10;">💾 Save Lecture</button>
+            <button class="btn" id="export-pdf">Export PDF</button>
+            <button class="btn btn-secondary" id="export-latex">Export LaTeX</button>
+            <button class="btn btn-secondary" id="copy-code">Copy Code</button>
+            <a href="index.html" class="btn btn-secondary" style="text-decoration:none;display:inline-block;">← Dashboard</a>
+            <a href="auth.html" class="btn btn-secondary" id="login-link" style="text-decoration:none;display:inline-block;">Login</a>
             <button class="btn btn-secondary" id="logout-btn" style="display:none;">Logout</button>
-            <a href="http://178.255.127.62/swagger/index.html" class="btn btn-secondary" target="_blank">API Docs</a>
         </div>
     </header>
     
     <div class="container">
-        <div id="message-container"></div>
-        
-        <form id="lecture-form">
-            <div class="form-grid">
-                <div>
-                    <div class="form-section">
-                        <h2>Basic Information</h2>
-                        <div class="form-group">
-                            <label for="title">Lecture Title *</label>
-                            <input type="text" id="title" required placeholder="e.g., Основы квантовой механики">
-                        </div>
-                        <div class="form-group">
-                            <label for="subject">Subject *</label>
-                            <select id="subject" required>
+        <div class="editor-pane">
+            <div class="tabs">
+                <button class="tab active" data-tab="latex-editor">Lecture Content</button>
+                <button class="tab" data-tab="solution-editor">Additional Notes</button>
+                <button class="tab" data-tab="tikz-visual">TikZ Visual</button>
+                <button class="tab" data-tab="jsxgraph">Graph Plotter</button>
+                <button class="tab" data-tab="lecture-settings">Lecture Settings</button>
+            </div>
+            
+            <!-- LaTeX Editor with Monaco - Lecture Content -->
+            <div id="latex-editor" class="editor-content active">
+                <div id="monaco-editor"></div>
+            </div>
+            
+            <!-- Additional Notes Editor -->
+            <div id="solution-editor" class="editor-content">
+                <div id="monaco-solution"></div>
+            </div>
+            
+            <!-- TikZ Visual Editor -->
+            <div id="tikz-visual" class="editor-content">
+                <div class="tikz-toolbar">
+                    <button class="tool-btn active" data-tool="select">Select</button>
+                    <button class="tool-btn" data-tool="line">Line</button>
+                    <button class="tool-btn" data-tool="arrow">Arrow</button>
+                    <button class="tool-btn" data-tool="rectangle">Rectangle</button>
+                    <button class="tool-btn" data-tool="circle">Circle</button>
+                    <button class="tool-btn" data-tool="text">Text</button>
+                    <button class="tool-btn" data-tool="node">Node</button>
+                    <button class="tool-btn" data-tool="curve">Curve</button>
+                    <button class="tool-btn" data-tool="eraser">Eraser</button>
+                    <button class="tool-btn" id="toggle-touch">Touch: Off</button>
+                    <button class="tool-btn" id="undo-btn" title="Undo (Cmd+Z)">↺ Undo</button>
+                    <button class="tool-btn" id="redo-btn" title="Redo (Cmd+Shift+Z)">↻ Redo</button>
+                    <button class="tool-btn" id="zoom-in" title="Zoom In (+)">+</button>
+                    <button class="tool-btn" id="zoom-out" title="Zoom Out (-)">-</button>
+                    <button class="tool-btn" id="zoom-reset" title="Reset Zoom">100%</button>
+                    <button class="tool-btn" id="fullscreen-btn" title="Fullscreen">⛶</button>
+                    <select id="template-select" class="tool-btn" style="padding:6px 8px;">
+                        <option value="">Add template…</option>
+                        <option value="surface-solid">Solid surface</option>
+                        <option value="surface-water">Water surface</option>
+                        <option value="spring">Spring</option>
+                        <option value="pulley-fixed">Pulley (fixed)</option>
+                        <option value="pulley-movable">Pulley (movable)</option>
+                        <option value="balloon">Balloon</option>
+                    </select>
+                </div>
+                <div id="tikz-canvas-container" style="position:relative;">
+                    <canvas id="tikz-canvas" width="1600" height="1200" style="width:800px;height:600px;"></canvas>
+                </div>
+                <div class="tikz-controls">
+                    <div class="control-group">
+                        <label>Stroke:</label>
+                        <input type="color" id="stroke-color" value="#000000">
+                    </div>
+                    <div class="control-group">
+                        <label>Width:</label>
+                        <input type="number" id="stroke-width" value="1" min="0.5" max="10" step="0.5" style="width: 60px;">
+                    </div>
+                    <div class="control-group">
+                        <label>Fill:</label>
+                        <input type="color" id="fill-color" value="#ffffff">
+                    </div>
+                    <button class="btn btn-secondary" id="clear-tikz">Clear</button>
+                    <button class="btn" id="generate-tikz">Generate TikZ</button>
+                </div>
+            </div>
+            
+            <!-- JSXGraph Plotter -->
+            <div id="jsxgraph" class="editor-content">
+                <div id="jsxgraph-board"></div>
+                <div class="graph-controls">
+                    <div class="input-row">
+                        <input type="text" id="function-input" placeholder="Enter function: f(x) = x^2, sin(x), etc.">
+                        <button class="btn" id="plot-function">Plot</button>
+                    </div>
+                    <div class="input-row">
+                        <label>Points:</label>
+                        <input type="text" id="point-input" placeholder="(x, y) e.g., (2, 3)">
+                        <button class="btn" id="add-point">Add Point</button>
+                        <button class="btn btn-secondary" id="clear-graph">Clear</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lecture Settings -->
+            <div id="lecture-settings" class="editor-content">
+                <div style="padding:20px;overflow-y:auto;height:100%;">
+                    <h2 style="margin-bottom:20px;font-size:18px;color:#ffffff;">Lecture Settings</h2>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Title *</label>
+                        <input type="text" id="lecture-title" placeholder="Lecture title" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                    </div>
+                    <div style="display:flex;gap:15px;margin-bottom:15px;">
+                        <div style="flex:1;">
+                            <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Subject *</label>
+                            <select id="lecture-subject" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
                                 <option value="">Select subject</option>
                                 <option value="physics">Physics</option>
-                                <option value="math">Mathematics</option>
+                                <option value="math">Math</option>
                                 <option value="cs">Computer Science</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="summary">Summary</label>
-                            <textarea id="summary" rows="3" placeholder="Brief description of the lecture"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Tags</label>
-                            <div class="tags-input" id="tags-input">
-                                <input type="text" class="tag-input" id="tag-input" placeholder="Add tags (press Enter)">
-                            </div>
-                            <div class="info-text">Press Enter to add tags. Example: quantum-mechanics, physics, advanced</div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-section">
-                        <h2>Video & Resources</h2>
-                        <div class="form-group">
-                            <label for="video-url">Video URL</label>
-                            <input type="url" id="video-url" placeholder="https://youtube.com/watch?v=... or direct video link">
-                            <div class="info-text">YouTube, Vimeo, or direct MP4/WebM link</div>
-                        </div>
-                        <div class="form-group">
-                            <label for="video-transcript">Video Transcript</label>
-                            <textarea id="video-transcript" rows="4" placeholder="Transcript of the video content (optional)"></textarea>
-                            <div class="info-text">Helps with accessibility and searchability</div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-section">
-                        <h2>Lecture Content (LaTeX Conspect)</h2>
-                        <div class="editor-container">
-                            <div class="editor-header">
-                                <h3>LaTeX Editor</h3>
-                                <button type="button" class="btn btn-secondary" id="preview-content-btn">Preview</button>
-                            </div>
-                            <div id="monaco-content"></div>
-                        </div>
-                        <div id="content-preview" class="preview-box" style="display:none;"></div>
-                    </div>
-                </div>
-                
-                <div>
-                    <div class="form-section">
-                        <h2>Settings</h2>
-                        <div class="form-group">
-                            <label for="level">Level *</label>
-                            <select id="level" required>
+                        <div style="flex:1;">
+                            <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Level *</label>
+                            <select id="lecture-level" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
                                 <option value="basic">Basic</option>
                                 <option value="advanced">Advanced</option>
                                 <option value="olympiad">Olympiad</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="status">Status *</label>
-                            <select id="status" required>
-                                <option value="draft">Draft</option>
-                                <option value="active">Active</option>
-                                <option value="archived">Archived</option>
-                            </select>
-                        </div>
                     </div>
-                    
-                    <div class="form-section">
-                        <h2>API Configuration</h2>
-                        <div class="form-group">
-                            <label for="api-token">Bearer Token *</label>
-                            <input type="password" id="api-token" placeholder="Admin JWT token (auto-filled after login)">
-                            <div class="info-text">Tip: use Login in header to obtain a token.</div>
-                        </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="api-url">API Endpoint</label>
-                            <input type="text" id="api-url" value="http://178.255.127.62/api/v1/admin/lectures" readonly>
-                        </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Summary</label>
+                        <textarea id="lecture-summary" rows="3" placeholder="Brief description of the lecture" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;"></textarea>
                     </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Tags (comma-separated)</label>
+                        <input type="text" id="lecture-tags" placeholder="quantum-mechanics, physics, advanced" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Status</label>
+                        <select id="lecture-status" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                            <option value="draft">Draft</option>
+                            <option value="active">Active</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Upload Lecture Video</label>
+                        <input type="file" id="video-file" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/x-msvideo" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:12px;">
+                        <div style="font-size:11px;color:#858585;margin-top:5px;">MP4, MOV, WebM formats. File uploads require an admin token.</div>
+                        <div class="upload-status" id="video-upload-status">No video uploaded yet.</div>
+                        <video id="video-preview" controls></video>
+                        <button type="button" class="btn btn-secondary" id="clear-video-btn" style="margin-top:10px;display:none;">Remove Uploaded Video</button>
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Video URL (external)</label>
+                        <input type="url" id="video-url" placeholder="https://youtube.com/watch?v=... or direct video link" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                        <div style="font-size:11px;color:#858585;margin-top:5px;">YouTube, Vimeo, or direct MP4/WebM link</div>
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Video Transcript</label>
+                        <textarea id="video-transcript" rows="4" placeholder="Transcript of the video content (optional)" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;"></textarea>
+                        <div style="font-size:11px;color:#858585;margin-top:5px;">Helps with accessibility and searchability</div>
+                    </div>
+                    <div id="save-message" style="margin-top:15px;padding:12px;border-radius:4px;display:none;font-size:13px;"></div>
                 </div>
             </div>
-            
-            <div class="form-actions">
-                <button type="button" class="btn btn-secondary" id="preview-json-btn">Preview JSON</button>
-                <button type="submit" class="btn btn-success">💾 Save Lecture</button>
+        </div>
+        
+        <div class="preview-pane">
+            <div class="pane-header">
+                <span>Live Preview</span>
+                <button class="btn btn-secondary" id="refresh-preview">Refresh</button>
             </div>
-        </form>
+            <div id="preview"></div>
+        </div>
     </div>
     
+    <!-- KaTeX -->
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas for PDF export of preview -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    
+    <!-- JSXGraph -->
+    <script src="https://cdn.jsdelivr.net/npm/jsxgraph@1.7.0/distrib/jsxgraphcore.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsxgraph@1.7.0/distrib/jsxgraph.css">
+    
+    <!-- Monaco Editor -->
     <script>var require = { paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } };</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.nls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
     
-    <script>
-        let contentEditor;
-        const tags = [];
-
-        // Auth helpers
-        function getToken() { return localStorage.getItem('COOLPHY_TOKEN') || ''; }
-        function setAuthUI() {
-            const t = getToken();
-            const tokenInput = document.getElementById('api-token');
-            const logoutBtn = document.getElementById('logout-btn');
-            const loginLink = document.getElementById('login-link');
-            if (t) {
-                tokenInput.value = t;
-                logoutBtn.style.display = 'inline-block';
-                loginLink.style.display = 'none';
-            } else {
-                logoutBtn.style.display = 'none';
-                loginLink.style.display = 'inline-block';
-            }
-        }
-        document.addEventListener('DOMContentLoaded', setAuthUI);
-        document.addEventListener('click', (e)=>{
-            if (e.target && e.target.id === 'logout-btn') {
-                localStorage.removeItem('COOLPHY_TOKEN');
-                setAuthUI();
-            }
-        });
-        
-        require(['vs/editor/editor.main'], function() {
-            contentEditor = monaco.editor.create(document.getElementById('monaco-content'), {
-                value: `% Lecture conspect with LaTeX\n\n\\\\section{Введение в квантовую механику}\n\nКвантовая механика изучает поведение микроскопических объектов.\n\n\\\\subsection{Волновая функция}\n\n$$\\\\Psi(\\\\mathbf{r},t) = A e^{i(\\\\mathbf{k} \\\\cdot \\\\mathbf{r} - \\\\omega t)}$$\n\n\\\\subsection{Принцип неопределённости Гейзенберга}\n\n$$\\\\Delta x \\\\Delta p \\\\geq \\\\frac{\\\\hbar}{2}$$\n\n\\\\section{Уравнение Шрёдингера}\n\n$$i\\\\hbar\\\\frac{\\\\partial}{\\\\partial t}\\\\Psi = \\\\hat{H}\\\\Psi$$`,
-                language: 'latex',
-                theme: 'vs-dark',
-                automaticLayout: true,
-                minimap: { enabled: false },
-                fontSize: 14
-            });
-        });
-        
-        // Tags management
-        const tagInput = document.getElementById('tag-input');
-        tagInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const value = tagInput.value.trim();
-                if (value && !tags.includes(value)) {
-                    tags.push(value);
-                    renderTags();
-                    tagInput.value = '';
-                }
-            }
-        });
-        
-        function renderTags() {
-            const tagsInput = document.getElementById('tags-input');
-            const existingTags = tagsInput.querySelectorAll('.tag');
-            existingTags.forEach(tag => tag.remove());
-            
-            tags.forEach((tag, index) => {
-                const tagEl = document.createElement('span');
-                tagEl.className = 'tag';
-                tagEl.innerHTML = `${tag} <span class="tag-remove" onclick="removeTag(${index})">×</span>`;
-                tagsInput.insertBefore(tagEl, tagInput);
-            });
-        }
-        
-        function removeTag(index) { tags.splice(index, 1); renderTags(); }
-        
-        // Preview
-        document.getElementById('preview-content-btn').addEventListener('click', () => {
-            const preview = document.getElementById('content-preview');
-            preview.style.display = 'block';
-            preview.innerHTML = contentEditor.getValue();
-            renderMathInElement(preview, {
-                delimiters: [
-                    {left: '$$', right: '$$', display: true},
-                    {left: '$', right: '$', display: false},
-                    {left: '\\[', right: '\\]', display: true},
-                    {left: '\\(', right: '\\)', display: false}
-                ],
-                throwOnError: false
-            });
-        });
-        
-        document.getElementById('preview-json-btn').addEventListener('click', () => {
-            const data = collectFormData();
-            alert(JSON.stringify(data, null, 2));
-        });
-        
-        function collectFormData() {
-            const videoUrl = document.getElementById('video-url').value.trim();
-            const videoTranscript = document.getElementById('video-transcript').value.trim();
-            return {
-                title: document.getElementById('title').value,
-                subject: document.getElementById('subject').value,
-                content_latex: contentEditor.getValue(),
-                summary: document.getElementById('summary').value,
-                tags: tags,
-                level: document.getElementById('level').value,
-                status: document.getElementById('status').value,
-                video_url: videoUrl || undefined,
-                video_transcript: videoTranscript || undefined
-            };
-        }
-        
-        document.getElementById('lecture-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const token = document.getElementById('api-token').value;
-            const apiUrl = document.getElementById('api-url').value;
-            const data = collectFormData();
-            
-            if (!token) {
-                showMessage('error', 'Please provide an API token');
-                return;
-            }
-            
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                if (response.ok) {
-                    showMessage('success', `Lecture created successfully! ID: ${result.id || 'N/A'}`);
-                } else {
-                    showMessage('error', `Error: ${result.error || 'Failed to create lecture'}`);
-                }
-            } catch (error) {
-                showMessage('error', `Network error: ${error.message}`);
-            }
-        });
-        
-        function showMessage(type, text) {
-            const container = document.getElementById('message-container');
-            const className = type === 'success' ? 'success-message' : 'error-message';
-            container.innerHTML = `<div class="${className}">${text}</div>`;
-            setTimeout(() => container.innerHTML = '', 5000);
-        }
-    </script>
+    <script src="admin-lectures-full-script.js"></script>
 </body>
 </html>
