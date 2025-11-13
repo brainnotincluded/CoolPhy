@@ -24,6 +24,8 @@ func Register(r *gin.Engine, cfg config.Config) {
 	{
 		api.POST("/auth/register", handlers.RegisterHandler(cfg))
 		api.POST("/auth/login", handlers.LoginHandler(cfg))
+		api.POST("/auth/logout", handlers.Logout())
+		api.POST("/password/reset", handlers.PasswordReset())
 		api.GET("/ping", handlers.Ping())
 
 		api.GET("/lectures", handlers.ListLectures())
@@ -32,6 +34,7 @@ func Register(r *gin.Engine, cfg config.Config) {
 		api.GET("/tasks/:id", handlers.GetTask())
 		api.GET("/topics", handlers.ListTopics())
 		api.GET("/topics/:id", handlers.GetTopic())
+		api.GET("/topics/tree", handlers.GetTopicsTree())
 
 		// Protected routes
 		auth := api.Group("")
@@ -45,7 +48,13 @@ func Register(r *gin.Engine, cfg config.Config) {
 			// Solutions
 			auth.POST("/tasks/:id/solve", handlers.SolveTask())
 			auth.GET("/tasks/:id/solutions", handlers.GetTaskSolutions())
+			auth.PUT("/tasks/:id/status", handlers.UpdateTaskStatus())
 			auth.GET("/solutions", handlers.ListSolutions())
+			auth.GET("/solutions/:id", handlers.GetSolution())
+			auth.PUT("/solutions/:id", handlers.UpdateSolution())
+			auth.DELETE("/solutions/:id", handlers.DeleteSolution())
+			// Lectures
+			auth.POST("/lectures/:id/complete", handlers.CompleteLecture())
 			// Notes
 			auth.GET("/lectures/:id/notes", handlers.GetLectureNotes())
 			auth.POST("/lectures/:id/notes", handlers.CreateLectureNote())
@@ -68,6 +77,7 @@ func Register(r *gin.Engine, cfg config.Config) {
 			{
 				// Admin dashboard
 				admin.GET("", handlers.AdminDashboard())
+				admin.GET("/logs", handlers.AdminLogs())
 				admin.GET("/lectures", handlers.AdminLectures())
 				admin.GET("/tasks", handlers.AdminTasks())
 				admin.GET("/topics", handlers.AdminTopics())

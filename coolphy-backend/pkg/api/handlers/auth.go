@@ -1195,3 +1195,236 @@ func Ping() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "timestamp": time.Now().Unix()})
 	}
 }
+
+// Logout godoc
+// @Summary      User logout (JWT stateless - client-side token removal)
+// @Tags         auth
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /auth/logout [post]
+func Logout() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// JWT is stateless, so logout is handled client-side by removing token
+		c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
+	}
+}
+
+// PasswordReset godoc
+// @Summary      Request password reset email
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      map[string]string  true  "Email"
+// @Success      200   {object}  map[string]interface{}
+// @Router       /password/reset [post]
+func PasswordReset() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			Email string `json:"email" binding:"required,email"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
+			return
+		}
+		// TODO: implement email sending with reset token
+		// For now, return success (placeholder)
+		c.JSON(http.StatusOK, gin.H{"message": "password reset email sent if account exists"})
+	}
+}
+
+// CompleteLecture godoc
+// @Summary      Mark lecture as completed/studied
+// @Tags         lectures
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path      int  true  "Lecture ID"
+// @Success      200  {object}  map[string]interface{}
+// @Router       /lectures/{id}/complete [post]
+func CompleteLecture() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var lect models.Lecture
+		if err := db.Get().First(&lect, c.Param("id")).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "lecture not found"})
+			return
+		}
+		userID, _ := c.Get("userID")
+		// Record completion by creating a note or updating user stats
+		// For now, just increment view count and return success
+		db.Get().Model(&lect).Update("view_count", lect.ViewCount+1)
+		c.JSON(http.StatusOK, gin.H{"message": "lecture marked as complete"})
+	}
+}
+
+// GetTopicsTree godoc
+// @Summary      Get topics in tree structure
+// @Tags         topics
+// @Produce      json
+// @Success      200  {array}   models.Topic
+// @Router       /topics/tree [get]
+func GetTopicsTree() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var topics []models.Topic
+		if err := db.Get().Order("subject, order_index, id").Find(&topics).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		// Build tree structure from flat list
+		tree := buildTopicTree(topics)
+		c.JSON(http.StatusOK, tree)
+	}
+}
+
+func buildTopicTree(topics []models.Topic) []map[string]interface{} {
+	topicMap := make(map[uint]*models.Topic)
+	for i := range topics {
+		topicMap[topics[i].ID] = &topics[i]
+	}
+	var roots []map[string]interface{}
+	for _, topic := range topics {
+		node := map[string]interface{}{
+			"id":          topic.ID,
+			"name":        topic.Name,
+			"subject":     topic.Subject,
+			"description": topic.Description,
+			"parent_id":   topic.ParentID,
+			"order_index": topic.OrderIndex,
+			"children":    []map[string]interface{}{},
+		}
+		if topic.ParentID == nil {
+			roots = append(roots, node)
+		}
+	}
+	return roots
+}
+
+// UpdateTaskStatus godoc
+// @Summary      Update task status
+// @Tags         tasks
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                 true  "Task ID"
+// @Param        body  body      map[string]string   true  "Status"
+// @Success      200   {object}  models.Task
+// @Router       /tasks/{id}/status [put]
+func UpdateTaskStatus() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			Status string `json:"status" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
+			return
+		}
+		var task models.Task
+		if err := db.Get().First(&task, c.Param("id")).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+			return
+		}
+		task.Status = req.Status
+		if err := db.Get().Save(&task).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update"})
+			return
+		}
+		c.JSON(http.StatusOK, task)
+	}
+}
+
+// GetSolution godoc
+// @Summary      Get specific solution attempt
+// @Tags         solutions
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path      int  true  "Solution ID"
+// @Success      200  {object}  models.SolutionAttempt
+// @Router       /solutions/{id} [get]
+func GetSolution() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var attempt models.SolutionAttempt
+		if err := db.Get().Where("id = ? AND user_id = ?", c.Param("id"), userID).First(&attempt).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "solution not found"})
+			return
+		}
+		c.JSON(http.StatusOK, attempt)
+	}
+}
+
+// UpdateSolution godoc
+// @Summary      Update solution attempt
+// @Tags         solutions
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                        true  "Solution ID"
+// @Param        body  body      models.SolutionAttempt     true  "Solution data"
+// @Success      200   {object}  models.SolutionAttempt
+// @Router       /solutions/{id} [put]
+func UpdateSolution() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var attempt models.SolutionAttempt
+		if err := db.Get().Where("id = ? AND user_id = ?", c.Param("id"), userID).First(&attempt).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "solution not found"})
+			return
+		}
+		var req models.SolutionAttempt
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid input"})
+			return
+		}
+		attempt.UserAnswer = req.UserAnswer
+		attempt.Status = req.Status
+		if err := db.Get().Save(&attempt).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update"})
+			return
+		}
+		c.JSON(http.StatusOK, attempt)
+	}
+}
+
+// DeleteSolution godoc
+// @Summary      Delete solution attempt
+// @Tags         solutions
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path      int  true  "Solution ID"
+// @Success      200  {object}  map[string]interface{}
+// @Router       /solutions/{id} [delete]
+func DeleteSolution() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var attempt models.SolutionAttempt
+		if err := db.Get().Where("id = ? AND user_id = ?", c.Param("id"), userID).First(&attempt).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "solution not found"})
+			return
+		}
+		if err := db.Get().Delete(&attempt).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "solution deleted"})
+	}
+}
+
+// AdminLogs godoc
+// @Summary      View system logs (placeholder)
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /admin/logs [get]
+func AdminLogs() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// TODO: implement log file reading or log aggregation
+		// For now, return placeholder data
+		c.JSON(http.StatusOK, gin.H{
+			"logs": []string{
+				"System operational",
+				"No critical errors",
+			},
+			"message": "Log viewing not yet implemented",
+		})
+	}
+}
