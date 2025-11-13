@@ -485,8 +485,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "Backend API for educational platform (lectures, tasks, topics, auth)",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {
