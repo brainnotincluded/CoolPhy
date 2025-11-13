@@ -523,14 +523,16 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 content = content.replace(/\\textbf\{([^}]+)\}/g, '<strong>$1</strong>');
                 content = content.replace(/\\textit\{([^}]+)\}/g, '<em>$1</em>');
                 
-                // Handle TikZ pictures - create placeholder and render separately
+                const tempDiv = document.createElement('div');
+                
+                // Handle TikZ pictures - embed script tags directly
                 const tikzMatches = [];
                 content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, (match) => {
-                    tikzMatches.push(match);
-                    return `<div class="tikz-placeholder" data-index="${tikzMatches.length - 1}" style="background: white; padding: 20px; margin: 10px 0; border-radius: 4px;"></div>`;
+                    const id = 'tikz-' + Date.now() + '-' + tikzMatches.length;
+                    tikzMatches.push({ id, code: match });
+                    return `<div id="${id}" style="background: white; padding: 20px; margin: 10px 0; border-radius: 4px;"></div>`;
                 });
                 
-                const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = content;
                 preview.appendChild(tempDiv);
                 
@@ -547,15 +549,26 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 
                 // Process TikZ diagrams with TikZJax
                 if (tikzMatches.length > 0) {
-                    tikzMatches.forEach((tikzCode, index) => {
-                        const placeholder = preview.querySelector(`.tikz-placeholder[data-index="${index}"]`);
-                        if (placeholder) {
+                    console.log('Processing', tikzMatches.length, 'TikZ diagrams');
+                    tikzMatches.forEach(({ id, code }) => {
+                        const container = document.getElementById(id);
+                        if (container) {
+                            // Create script element for TikZJax
                             const script = document.createElement('script');
                             script.type = 'text/tikz';
-                            script.textContent = tikzCode;
-                            placeholder.appendChild(script);
+                            script.textContent = code;
+                            container.appendChild(script);
+                            console.log('Added TikZ script to', id);
                         }
                     });
+                    
+                    // Force TikZJax to process the new script tags
+                    // TikZJax listens for DOM changes, so trigger a mutation
+                    setTimeout(() => {
+                        // Force a DOM update event
+                        const event = new Event('DOMContentLoaded', { bubbles: true, cancelable: true });
+                        document.dispatchEvent(event);
+                    }, 100);
                 }
             } catch (error) {
                 const errorDiv = document.createElement('div');
