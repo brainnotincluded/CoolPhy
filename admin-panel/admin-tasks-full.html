@@ -144,11 +144,20 @@
             min-height: 0;
         }
         
-        .preview-pane {
+.preview-pane {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-width: 0;
+        }
+        
+        #preview img,
+        #preview svg,
+        #preview iframe {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px auto;
         }
         
         .pane-header {
@@ -602,6 +611,8 @@
         let tikzOffsetY = 0;
         let tikzCanvasWidth = 800;
         let tikzCanvasHeight = 600;
+        let selectedIndex = null;
+        let dragInfo = null; // for select/move/handle editing
         let jsxBoard;
         
         // Initialize Monaco Editors
@@ -927,6 +938,76 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         }
         window.addEventListener('resize', resizeTikzCanvas);
         
+        function screenToWorld(clientX, clientY) {
+            const rect = tikzCanvas.getBoundingClientRect();
+            const canvasX = clientX - rect.left;
+            const canvasY = clientY - rect.top;
+            const w = tikzCanvasWidth;
+            const h = tikzCanvasHeight;
+            const x = (canvasX - w/2) / tikzScale - tikzOffsetX + w/2;
+            const y = (canvasY - h/2) / tikzScale - tikzOffsetY + h/2;
+            return { x, y };
+        }
+        
+        function findNearestObject(x, y, maxDist = 20) {
+            let bestIndex = null;
+            let bestDist = maxDist;
+            tikzObjects.forEach((obj, idx) => {
+                const d = distanceToShape(obj, x, y);
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestIndex = idx;
+                }
+            });
+            return bestIndex;
+        }
+        
+        function snapPoint(x, y, ignoreIndex = null) {
+            const snapDist = 10;
+            let bestX = x;
+            let bestY = y;
+            let bestD = snapDist;
+            tikzObjects.forEach((obj, idx) => {
+                if (idx === ignoreIndex) return;
+                switch (obj.type) {
+                    case 'line':
+                    case 'arrow': {
+                        const pts = [ {x: obj.x1, y: obj.y1}, {x: obj.x2, y: obj.y2} ];
+                        pts.forEach(p => {
+                            const d = Math.hypot(x - p.x, y - p.y);
+                            if (d < bestD) { bestD = d; bestX = p.x; bestY = p.y; }
+                        });
+                        break;
+                    }
+                    case 'circle': {
+                        const d = Math.hypot(x - obj.x, y - obj.y);
+                        if (d < bestD) { bestD = d; bestX = obj.x; bestY = obj.y; }
+                        break;
+                    }
+                    case 'rectangle': {
+                        const corners = [
+                            {x: obj.x, y: obj.y},
+                            {x: obj.x + obj.width, y: obj.y},
+                            {x: obj.x, y: obj.y + obj.height},
+                            {x: obj.x + obj.width, y: obj.y + obj.height},
+                        ];
+                        corners.forEach(p => {
+                            const d = Math.hypot(x - p.x, y - p.y);
+                            if (d < bestD) { bestD = d; bestX = p.x; bestY = p.y; }
+                        });
+                        break;
+                    }
+                    case 'text':
+                    case 'node': {
+                        const d = Math.hypot(x - obj.x, y - obj.y);
+                        if (d < bestD) { bestD = d; bestX = obj.x; bestY = obj.y; }
+                        break;
+                    }
+                }
+            });
+            return { x: bestX, y: bestY };
+        }
+        
         let currentTool = 'select';
         let isDrawing = false;
         let startX, startY;
@@ -1040,16 +1121,45 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         
         const pointerDown = (e) => {
             if (e.pointerType === 'touch' && !touchAllowed) return; // palm rejection
-            if (e.button === 1 || e.shiftKey) return; // Don't draw when panning
             if (isPanning) return;
-            const rect = tikzCanvas.getBoundingClientRect();
-            const canvasX = e.clientX - rect.left;
-            const canvasY = e.clientY - rect.top;
-            // Transform to world coordinates
-            const w = tikzCanvasWidth;
-            const h = tikzCanvasHeight;
-            startX = (canvasX - w/2) / tikzScale - tikzOffsetX + w/2;
-            startY = (canvasY - h/2) / tikzScale - tikzOffsetY + h/2;
+            
+            // Selection / editing mode
+            if (currentTool === 'select') {
+                const { x, y } = screenToWorld(e.clientX, e.clientY);
+                const idx = findNearestObject(x, y, 20);
+                if (idx === null) {
+                    selectedIndex = null;
+                    dragInfo = null;
+                    renderTikzCanvas();
+                    return;
+                }
+                selectedIndex = idx;
+                const obj = tikzObjects[idx];
+                const handleRadius = 10;
+                let handle = null;
+                if (obj.type === 'line' || obj.type === 'arrow') {
+                    const d1 = Math.hypot(x - obj.x1, y - obj.y1);
+                    const d2 = Math.hypot(x - obj.x2, y - obj.y2);
+                    if (d1 < handleRadius && d1 <= d2) handle = 'line-start';
+                    else if (d2 < handleRadius) handle = 'line-end';
+                } else if (obj.type === 'circle') {
+                    const d = Math.hypot(x - obj.x, y - obj.y);
+                    if (d < handleRadius) handle = 'circle-center';
+                }
+                if (handle) {
+                    dragInfo = { mode: 'handle', handle, index: idx };
+                } else {
+                    dragInfo = { mode: 'move', index: idx, startX: x, startY: y, original: JSON.parse(JSON.stringify(obj)) };
+                }
+                renderTikzCanvas();
+                return;
+            }
+            
+            // Drawing tools
+            if (e.button === 1 || e.shiftKey) return; // Don't draw when panning
+            const { x, y } = screenToWorld(e.clientX, e.clientY);
+            startX = x;
+            startY = y;
             isDrawing = true;
             if (currentTool === 'text') {
                 const text = prompt('Enter text:');
@@ -1063,17 +1173,54 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         tikzCanvas.addEventListener('pointerdown', pointerDown);
         
         const pointerMove = (e) => {
-            if (!isDrawing) return;
             if (e.pointerType === 'touch' && !touchAllowed) return;
             if (isPanning) return;
-            const rect = tikzCanvas.getBoundingClientRect();
-            const canvasX = e.clientX - rect.left;
-            const canvasY = e.clientY - rect.top;
+            
+            if (currentTool === 'select') {
+                if (!dragInfo) return;
+                const { x, y } = screenToWorld(e.clientX, e.clientY);
+                const obj = tikzObjects[dragInfo.index];
+                if (!obj) return;
+                if (dragInfo.mode === 'handle') {
+                    const snapped = snapPoint(x, y, dragInfo.index);
+                    if (dragInfo.handle === 'line-start') {
+                        obj.x1 = snapped.x; obj.y1 = snapped.y;
+                    } else if (dragInfo.handle === 'line-end') {
+                        obj.x2 = snapped.x; obj.y2 = snapped.y;
+                    } else if (dragInfo.handle === 'circle-center') {
+                        obj.x = snapped.x; obj.y = snapped.y;
+                    }
+                } else if (dragInfo.mode === 'move') {
+                    const dx = x - dragInfo.startX;
+                    const dy = y - dragInfo.startY;
+                    const base = dragInfo.original;
+                    switch (base.type) {
+                        case 'line':
+                        case 'arrow':
+                            obj.x1 = base.x1 + dx; obj.y1 = base.y1 + dy;
+                            obj.x2 = base.x2 + dx; obj.y2 = base.y2 + dy;
+                            break;
+                        case 'rectangle':
+                            obj.x = base.x + dx; obj.y = base.y + dy;
+                            break;
+                        case 'circle':
+                            obj.x = base.x + dx; obj.y = base.y + dy;
+                            break;
+                        case 'text':
+                        case 'node':
+                            obj.x = base.x + dx; obj.y = base.y + dy;
+                            break;
+                    }
+                }
+                renderTikzCanvas();
+                return;
+            }
+            
+            if (!isDrawing) return;
+            const { x: currentX, y: currentY } = screenToWorld(e.clientX, e.clientY);
+            renderTikzCanvas();
             const w = tikzCanvasWidth;
             const h = tikzCanvasHeight;
-            const currentX = (canvasX - w/2) / tikzScale - tikzOffsetX + w/2;
-            const currentY = (canvasY - h/2) / tikzScale - tikzOffsetY + h/2;
-            renderTikzCanvas();
             tikzCtx.save();
             tikzCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
             tikzCtx.translate(w/2, h/2);
@@ -1100,16 +1247,19 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         tikzCanvas.addEventListener('pointermove', pointerMove);
         
         const pointerUp = (e) => {
-            if (!isDrawing) return;
             if (e.pointerType === 'touch' && !touchAllowed) return;
             if (isPanning) return;
-            const rect = tikzCanvas.getBoundingClientRect();
-            const canvasX = e.clientX - rect.left;
-            const canvasY = e.clientY - rect.top;
-            const w = tikzCanvasWidth;
-            const h = tikzCanvasHeight;
-            const endX = (canvasX - w/2) / tikzScale - tikzOffsetX + w/2;
-            const endY = (canvasY - h/2) / tikzScale - tikzOffsetY + h/2;
+            
+            if (currentTool === 'select') {
+                if (dragInfo) {
+                    saveHistory();
+                    dragInfo = null;
+                }
+                return;
+            }
+            
+            if (!isDrawing) return;
+            const { x: endX, y: endY } = screenToWorld(e.clientX, e.clientY);
             const strokeColor = document.getElementById('stroke-color').value;
             const strokeWidth = document.getElementById('stroke-width').value;
             const fillColor = document.getElementById('fill-color').value;
@@ -1246,7 +1396,7 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
             }
             
             // Draw all objects
-            tikzObjects.forEach(obj => {
+            tikzObjects.forEach((obj, idx) => {
                 tikzCtx.strokeStyle = obj.color || '#000';
                 tikzCtx.lineWidth = (obj.strokeWidth || obj.width || 1) / tikzScale;
                 tikzCtx.fillStyle = obj.fill || 'transparent';
@@ -1275,6 +1425,22 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
                         tikzCtx.font = (14 / tikzScale) + 'px Arial';
                         tikzCtx.fillText(obj.text, obj.x, obj.y);
                         break;
+                }
+
+                // Draw selection handles
+                if (idx === selectedIndex) {
+                    tikzCtx.save();
+                    tikzCtx.fillStyle = '#0e639c';
+                    const handleSize = 4 / tikzScale;
+                    if (obj.type === 'line' || obj.type === 'arrow') {
+                        const handles = [ {x: obj.x1, y: obj.y1}, {x: obj.x2, y: obj.y2} ];
+                        handles.forEach(p => {
+                            tikzCtx.fillRect(p.x - handleSize, p.y - handleSize, handleSize*2, handleSize*2);
+                        });
+                    } else if (obj.type === 'circle') {
+                        tikzCtx.fillRect(obj.x - handleSize, obj.y - handleSize, handleSize*2, handleSize*2);
+                    }
+                    tikzCtx.restore();
                 }
             });
             tikzCtx.restore();
