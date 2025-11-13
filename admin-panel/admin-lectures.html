@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin: Lectures - CoolPhy</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1e1e1e; color: #d4d4d4; min-height: 100vh; }
+        header { padding: 20px 30px; background: #252526; border-bottom: 1px solid #3e3e42; display: flex; justify-content: space-between; align-items: center; }
+        h1 { font-size: 24px; font-weight: 600; }
+        .header-actions { display: flex; gap: 10px; }
+        .btn { padding: 8px 16px; background: #0e639c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.2s; text-decoration: none; display: inline-block; }
+        .btn:hover { background: #1177bb; }
+        .btn-secondary { background: #3e3e42; }
+        .btn-secondary:hover { background: #505050; }
+        .btn-success { background: #107c10; }
+        .btn-success:hover { background: #0f6c0f; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+        .form-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 20px; }
+        .form-section { background: #252526; border: 1px solid #3e3e42; border-radius: 6px; padding: 25px; margin-bottom: 20px; }
+        .form-section h2 { font-size: 18px; margin-bottom: 20px; color: #0e639c; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #cccccc; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; background: #1e1e1e; color: #d4d4d4; border: 1px solid #3e3e42; border-radius: 4px; font-size: 14px; font-family: inherit; }
+        .form-group textarea { font-family: 'Courier New', monospace; resize: vertical; min-height: 100px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #0e639c; }
+        .tags-input { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 4px; min-height: 42px; }
+        .tag { padding: 4px 10px; background: #0e639c; color: white; border-radius: 3px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+        .tag-remove { cursor: pointer; font-weight: bold; }
+        .tag-input { border: none; background: transparent; color: #d4d4d4; flex: 1; min-width: 120px; outline: none; font-size: 14px; }
+        .editor-container { margin-top: 15px; border: 1px solid #3e3e42; border-radius: 4px; overflow: hidden; }
+        .editor-header { padding: 10px 15px; background: #2d2d30; border-bottom: 1px solid #3e3e42; display: flex; justify-content: space-between; align-items: center; }
+        .editor-header h3 { font-size: 14px; font-weight: 500; }
+        #monaco-content { height: 400px; min-height: 300px; }
+        .preview-box { padding: 20px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 4px; margin-top: 10px; min-height: 150px; overflow-y: auto; max-height: 500px; }
+        .form-actions { display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px; }
+        .success-message, .error-message { padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
+        .success-message { background: #107c10; color: white; }
+        .error-message { background: #5a1d1d; color: #f48771; }
+        .info-text { font-size: 12px; color: #858585; margin-top: 5px; }
+        .links-list { list-style: none; padding: 0; }
+        .link-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .link-item input { flex: 1; }
+        .link-remove { padding: 6px 12px; background: #3e3e42; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎓 Create/Edit Lecture</h1>
+        <div class="header-actions">
+            <a href="index.html" class="btn btn-secondary">← Dashboard</a>
+            <a href="admin-tasks.html" class="btn btn-secondary">Tasks</a>
+            <a href="auth.html" class="btn btn-secondary" id="login-link">Login</a>
+            <button class="btn btn-secondary" id="logout-btn" style="display:none;">Logout</button>
+            <a href="http://178.255.127.62/swagger/index.html" class="btn btn-secondary" target="_blank">API Docs</a>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div id="message-container"></div>
+        
+        <form id="lecture-form">
+            <div class="form-grid">
+                <div>
+                    <div class="form-section">
+                        <h2>Basic Information</h2>
+                        <div class="form-group">
+                            <label for="title">Lecture Title *</label>
+                            <input type="text" id="title" required placeholder="e.g., Основы квантовой механики">
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject *</label>
+                            <select id="subject" required>
+                                <option value="">Select subject</option>
+                                <option value="physics">Physics</option>
+                                <option value="math">Mathematics</option>
+                                <option value="cs">Computer Science</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="summary">Summary</label>
+                            <textarea id="summary" rows="3" placeholder="Brief description of the lecture"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Tags</label>
+                            <div class="tags-input" id="tags-input">
+                                <input type="text" class="tag-input" id="tag-input" placeholder="Add tags (press Enter)">
+                            </div>
+                            <div class="info-text">Press Enter to add tags. Example: quantum-mechanics, physics, advanced</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>Lecture Content (LaTeX Conspect)</h2>
+                        <div class="editor-container">
+                            <div class="editor-header">
+                                <h3>LaTeX Editor</h3>
+                                <button type="button" class="btn btn-secondary" id="preview-content-btn">Preview</button>
+                            </div>
+                            <div id="monaco-content"></div>
+                        </div>
+                        <div id="content-preview" class="preview-box" style="display:none;"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="form-section">
+                        <h2>Settings</h2>
+                        <div class="form-group">
+                            <label for="level">Level *</label>
+                            <select id="level" required>
+                                <option value="basic">Basic</option>
+                                <option value="advanced">Advanced</option>
+                                <option value="olympiad">Olympiad</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="status">Status *</label>
+                            <select id="status" required>
+                                <option value="draft">Draft</option>
+                                <option value="active">Active</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>API Configuration</h2>
+                        <div class="form-group">
+                            <label for="api-token">Bearer Token *</label>
+                            <input type="password" id="api-token" placeholder="Admin JWT token (auto-filled after login)">
+                            <div class="info-text">Tip: use Login in header to obtain a token.</div>
+                        </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="api-url">API Endpoint</label>
+                            <input type="text" id="api-url" value="http://178.255.127.62/api/v1/admin/lectures" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="preview-json-btn">Preview JSON</button>
+                <button type="submit" class="btn btn-success">💾 Save Lecture</button>
+            </div>
+        </form>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script>var require = { paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } };</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.nls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
+    
+    <script>
+        let contentEditor;
+        const tags = [];
+
+        // Auth helpers
+        function getToken() { return localStorage.getItem('COOLPHY_TOKEN') || ''; }
+        function setAuthUI() {
+            const t = getToken();
+            const tokenInput = document.getElementById('api-token');
+            const logoutBtn = document.getElementById('logout-btn');
+            const loginLink = document.getElementById('login-link');
+            if (t) {
+                tokenInput.value = t;
+                logoutBtn.style.display = 'inline-block';
+                loginLink.style.display = 'none';
+            } else {
+                logoutBtn.style.display = 'none';
+                loginLink.style.display = 'inline-block';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', setAuthUI);
+        document.addEventListener('click', (e)=>{
+            if (e.target && e.target.id === 'logout-btn') {
+                localStorage.removeItem('COOLPHY_TOKEN');
+                setAuthUI();
+            }
+        });
+        
+        require(['vs/editor/editor.main'], function() {
+            contentEditor = monaco.editor.create(document.getElementById('monaco-content'), {
+                value: `% Lecture conspect with LaTeX\n\n\\\\section{Введение в квантовую механику}\n\nКвантовая механика изучает поведение микроскопических объектов.\n\n\\\\subsection{Волновая функция}\n\n$$\\\\Psi(\\\\mathbf{r},t) = A e^{i(\\\\mathbf{k} \\\\cdot \\\\mathbf{r} - \\\\omega t)}$$\n\n\\\\subsection{Принцип неопределённости Гейзенберга}\n\n$$\\\\Delta x \\\\Delta p \\\\geq \\\\frac{\\\\hbar}{2}$$\n\n\\\\section{Уравнение Шрёдингера}\n\n$$i\\\\hbar\\\\frac{\\\\partial}{\\\\partial t}\\\\Psi = \\\\hat{H}\\\\Psi$$`,
+                language: 'latex',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                fontSize: 14
+            });
+        });
+        
+        // Tags management
+        const tagInput = document.getElementById('tag-input');
+        tagInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = tagInput.value.trim();
+                if (value && !tags.includes(value)) {
+                    tags.push(value);
+                    renderTags();
+                    tagInput.value = '';
+                }
+            }
+        });
+        
+        function renderTags() {
+            const tagsInput = document.getElementById('tags-input');
+            const existingTags = tagsInput.querySelectorAll('.tag');
+            existingTags.forEach(tag => tag.remove());
+            
+            tags.forEach((tag, index) => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'tag';
+                tagEl.innerHTML = `${tag} <span class="tag-remove" onclick="removeTag(${index})">×</span>`;
+                tagsInput.insertBefore(tagEl, tagInput);
+            });
+        }
+        
+        function removeTag(index) { tags.splice(index, 1); renderTags(); }
+        
+        // Preview
+        document.getElementById('preview-content-btn').addEventListener('click', () => {
+            const preview = document.getElementById('content-preview');
+            preview.style.display = 'block';
+            preview.innerHTML = contentEditor.getValue();
+            renderMathInElement(preview, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '\\(', right: '\\)', display: false}
+                ],
+                throwOnError: false
+            });
+        });
+        
+        document.getElementById('preview-json-btn').addEventListener('click', () => {
+            const data = collectFormData();
+            alert(JSON.stringify(data, null, 2));
+        });
+        
+        function collectFormData() {
+            return {
+                title: document.getElementById('title').value,
+                subject: document.getElementById('subject').value,
+                content_latex: contentEditor.getValue(),
+                summary: document.getElementById('summary').value,
+                tags: tags,
+                level: document.getElementById('level').value,
+                status: document.getElementById('status').value
+            };
+        }
+        
+        document.getElementById('lecture-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = document.getElementById('api-token').value;
+            const apiUrl = document.getElementById('api-url').value;
+            const data = collectFormData();
+            
+            if (!token) {
+                showMessage('error', 'Please provide an API token');
+                return;
+            }
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    showMessage('success', `Lecture created successfully! ID: ${result.id || 'N/A'}`);
+                } else {
+                    showMessage('error', `Error: ${result.error || 'Failed to create lecture'}`);
+                }
+            } catch (error) {
+                showMessage('error', `Network error: ${error.message}`);
+            }
+        });
+        
+        function showMessage(type, text) {
+            const container = document.getElementById('message-container');
+            const className = type === 'success' ? 'success-message' : 'error-message';
+            container.innerHTML = `<div class="${className}">${text}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+    </script>
+</body>
+</html>
