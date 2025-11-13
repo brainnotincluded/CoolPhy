@@ -478,12 +478,6 @@
                 <span>Live Preview</span>
                 <button class="btn btn-secondary" id="refresh-preview">Refresh</button>
             </div>
-            <div class="preview-controls">
-                <label>Default diagram width (%)</label>
-                <input type="range" id="default-tikz-width" min="20" max="100" value="100" style="width:140px">
-                <label>Gap (px)</label>
-                <input type="number" id="tikz-gap" value="8" style="width:60px">
-            </div>
             <div id="preview"></div>
         </div>
     </div>
@@ -605,31 +599,59 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 const docMatch = code.match(/\\begin\{document\}([\s\S]*?)\\end\{document\}/);
                 let content = docMatch ? docMatch[1] : code;
                 
-                // Convert LaTeX to HTML with source spans for hover mapping
-                const contentStartOffset = code.indexOf(content);
-                content = content.replace(/\\section\{([^}]+)\}/g, (m, t, offset) => `<h2 class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${t}</h2>`);
-                content = content.replace(/\\subsection\{([^}]+)\}/g, (m, t, offset) => `<h3 class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${t}</h3>`);
-                content = content.replace(/\\textbf\{([^}]+)\}/g, (m, t, offset) => `<strong class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${t}</strong>`);
-                content = content.replace(/\\textit\{([^}]+)\}/g, (m, t, offset) => `<em class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${t}</em>`);
-                // Wrap math with spans to keep mapping
-                const wrapMath = (regex) => {
-                    content = content.replace(regex, (m, _inner, offset) => `<span class="src" data-start="${contentStartOffset+offset}" data-end="${contentStartOffset+offset+m.length}">${m}</span>`);
+                // Compute offsets against the raw content before any replacements
+                const raw = content;
+                const contentStartOffset = code.indexOf(raw);
+                // Strip preview meta comments from rendered content (but offsets computed from raw remain correct)
+                content = raw.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
+                
+                // First, wrap math tokens based on raw positions to keep mapping stable
+                const wrapTokensFrom = (src, regexes) => {
+                    // Collect tokens without overlap
+                    let tokens = [];
+                    const covered = (s,e)=>tokens.some(t=>!(e<=t.start||s>=t.end));
+                    for (const re of regexes) {
+                        for (const m of src.matchAll(re)) {
+                            let s = m.index, e = m.index + m[0].length;
+                            // Special case for inline $: group 1 may be leading char
+                            if (re === /(^|[^$])\$([^$\n]+?)\$(?!\$)/g) { s += (m[1] ? 1 : 0); }
+                            if (!covered(s,e)) tokens.push({start:s,end:e});
+                        }
+                    }
+                    tokens.sort((a,b)=>a.start-b.start);
+                    // Build html with spans at those ranges
+                    let out = '', pos = 0;
+                    for (const t of tokens) {
+                        out += content.slice(pos, t.start);
+                        const frag = src.slice(t.start, t.end);
+                        out += `<span class=\"src\" data-start=\"${contentStartOffset+t.start}\" data-end=\"${contentStartOffset+t.end}\">${frag}</span>`;
+                        pos = t.end;
+                    }
+                    out += content.slice(pos);
+                    content = out;
                 };
-                wrapMath(/\$\$([\s\S]*?)\$\$/g);
-                wrapMath(/\\\[([\s\S]*?)\\\]/g);
-                wrapMath(/\\\(([\s\S]*?)\\\)/g);
-                // Inline $...$ (do last to avoid touching $$)
-                content = content.replace(/(^|[^$])\$([^$\n]+?)\$(?!\$)/g, (m, p1, body, offset) => `${p1}<span class="src" data-start="${contentStartOffset+offset+(p1?1:0)}" data-end="${contentStartOffset+offset+m.length}">$${body}$</span>`);
+                wrapTokensFrom(raw, [/\$\$([\s\S]*?)\$\$/g, /\\\[([\s\S]*?)\\\]/g, /\\\(([\s\S]*?)\\\)/g, /(^|[^$])\$([^$\n]+?)\$(?!\$)/g]);
+                
+                // Then replace simple text macros to HTML headings (mapping approximate)
+                content = content.replace(/\\section\{([^}]+)\}/g, (m, t, offset) => `<h2 class=\"src\" data-start=\"${contentStartOffset+offset}\" data-end=\"${contentStartOffset+offset+m.length}\">${t}</h2>`)
+                                 .replace(/\\subsection\{([^}]+)\}/g, (m, t, offset) => `<h3 class=\"src\" data-start=\"${contentStartOffset+offset}\" data-end=\"${contentStartOffset+offset+m.length}\">${t}</h3>`)
+                                 .replace(/\\textbf\{([^}]+)\}/g, (m, t, offset) => `<strong class=\"src\" data-start=\"${contentStartOffset+offset}\" data-end=\"${contentStartOffset+offset+m.length}\">${t}</strong>`)
+                                 .replace(/\\textit\{([^}]+)\}/g, (m, t, offset) => `<em class=\"src\" data-start=\"${contentStartOffset+offset}\" data-end=\"${contentStartOffset+offset+m.length}\">${t}</em>`);
                 
                 const tempDiv = document.createElement('div');
                 
                 // Handle TikZ pictures - replace with iframes that run TikZJax inside
                 function hashCode(str){let h=0;for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0}return Math.abs(h)}
+                // Precompute tikz ranges from raw to keep offsets correct
+                const preTikz = [...raw.matchAll(/\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/g)].map(m=>({code:m[0],start:contentStartOffset+m.index,end:contentStartOffset+m.index+m[0].length}));
+                let tikzIdx = 0;
                 const tikzMatches = [];
-                content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, (match, _g1, offset) => {
+                content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, (match) => {
                     const id = 'tikz-' + hashCode(match);
                     // Parse previous line for meta like: % tikz-preview: width=50%, align=center
-                    const before = content.slice(0, offset);
+                    // Find the previous line from the current content (OK for reading meta)
+                    const current = content;
+                    const before = current.slice(0, current.indexOf(match));
                     const lineStart = before.lastIndexOf('\n') + 1;
                     const prevLine = before.slice(lineStart).trim();
                     let meta = {};
@@ -643,7 +665,8 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                         });
                     }
                     const saved = JSON.parse(localStorage.getItem('tikz_cfg_'+id) || '{}');
-                    const width = (meta.width != null ? meta.width : (saved.width || parseInt(document.getElementById('default-tikz-width')?.value || '100',10)));
+                    const width = (meta.width != null ? meta.width : (saved.width || 100));
+                    const height = meta.height || saved.height; // px optional
                     const align = meta.align || saved.align || 'inline';
                     let alignStyle = '';
                     if (align === 'inline') alignStyle = 'display:inline-block;';
@@ -651,21 +674,10 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     if (align === 'left') alignStyle = 'display:block;margin-left:0;margin-right:auto;';
                     if (align === 'right') alignStyle = 'display:block;margin-left:auto;margin-right:0;';
                     const sel = (opt) => (opt===align ? ' selected' : '');
-                    const start = contentStartOffset + offset; const end = start + match.length;
-                    tikzMatches.push({ id, code: match, start, end });
-                    return `<div class=\"tikz-card\" data-id=\"${id}\" data-start=\"${start}\" data-end=\"${end}\" style=\"width:${width}%;${alignStyle}\">`+
-                           `<div id=\"${id}\" class=\"tikz-frame\"></div>`+
-                           `<div class=\"tikz-card-ctrl\">`+
-                           `<label style=\"color:#ccc\">Width</label>`+
-                           `<input type=\"range\" min=\"20\" max=\"100\" value=\"${width}\" data-role=\"width\" style=\"width:120px\">`+
-                           `<label style=\"color:#ccc\">Align</label>`+
-                           `<select data-role=\"align\">`+
-                           `<option value=\"inline\"${sel('inline')}>Inline</option>`+
-                           `<option value=\"center\"${sel('center')}>Center</option>`+
-                           `<option value=\"left\"${sel('left')}>Left</option>`+
-                           `<option value=\"right\"${sel('right')}>Right</option>`+
-                           `</select>`+
-                           `</div>`+
+                    const pre = preTikz[tikzIdx++] || {start:contentStartOffset, end:contentStartOffset+match.length, code:match};
+                    tikzMatches.push({ id, code: match, start: pre.start, end: pre.end, height });
+                    return `<div class=\"tikz-card\" data-id=\"${id}\" data-start=\"${pre.start}\" data-end=\"${pre.end}\" style=\"width:${width}%;${alignStyle}\">`+
+                           `<div id=\"${id}\" class=\"tikz-frame\" ${height?`style=\\"height:${height}px\\"`:''}></div>`+
                            `</div>`;
                 });
                 
@@ -684,11 +696,12 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 });
                 
                 // Insert iframes for TikZ diagrams
-                tikzMatches.forEach(({ id, code }) => {
+                tikzMatches.forEach(({ id, code, height }) => {
                     const container = document.getElementById(id);
                     const card = document.querySelector(`.tikz-card[data-id="${id}"]`);
                     if (!container || !card) return;
-                    card.style.margin = (parseInt(document.getElementById('tikz-gap').value || '8',10)) + 'px';
+                    // default margin between cards
+                    card.style.margin = '8px';
                     const iframe = document.createElement('iframe');
                     iframe.style.width = '100%';
                     iframe.style.border = '0';
@@ -710,7 +723,7 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                             try {
                                 const doc = iframe.contentDocument;
                                 const h = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight, 150);
-                                iframe.style.height = h + 'px';
+                                iframe.style.height = (height ? height : h) + 'px';
                             } catch (e) {}
                         };
                         adjust();
@@ -721,10 +734,8 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     container.appendChild(iframe);
                 });
 
-                // Wire per-diagram controls
-                document.getElementById('default-tikz-width').addEventListener('input', () => renderLatex());
-                document.getElementById('tikz-gap').addEventListener('input', () => renderLatex());
-                document.querySelectorAll('.tikz-card-ctrl').forEach(ctrl => {
+                // No UI controls; layout strictly from code meta
+                
                     const card = ctrl.closest('.tikz-card');
                     const id = card.dataset.id;
                     const widthInput = ctrl.querySelector('[data-role="width"]');
