@@ -599,6 +599,8 @@
         let tikzScale = 1;
         let tikzOffsetX = 0;
         let tikzOffsetY = 0;
+        let tikzCanvasWidth = 800;
+        let tikzCanvasHeight = 600;
         let jsxBoard;
         
         // Initialize Monaco Editors
@@ -908,12 +910,21 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         const tikzCanvas = document.getElementById('tikz-canvas');
         const tikzCtx = tikzCanvas.getContext('2d', { alpha: false });
         // High DPI support
-        const dpr = window.devicePixelRatio || 2;
-        tikzCanvas.width = 1600 * dpr;
-        tikzCanvas.height = 1200 * dpr;
-        tikzCanvas.style.width = '800px';
-        tikzCanvas.style.height = '600px';
-        tikzCtx.scale(dpr, dpr);
+        const dpr = window.devicePixelRatio || 1;
+        
+        function resizeTikzCanvas() {
+            const container = document.getElementById('tikz-canvas-container');
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            tikzCanvasWidth = rect.width || 800;
+            tikzCanvasHeight = rect.height || 600;
+            tikzCanvas.width = tikzCanvasWidth * dpr;
+            tikzCanvas.height = tikzCanvasHeight * dpr;
+            tikzCanvas.style.width = tikzCanvasWidth + 'px';
+            tikzCanvas.style.height = tikzCanvasHeight + 'px';
+            renderTikzCanvas();
+        }
+        window.addEventListener('resize', resizeTikzCanvas);
         
         let currentTool = 'select';
         let isDrawing = false;
@@ -1029,8 +1040,8 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
             const canvasX = e.clientX - rect.left;
             const canvasY = e.clientY - rect.top;
             // Transform to world coordinates
-            const w = parseInt(tikzCanvas.style.width);
-            const h = parseInt(tikzCanvas.style.height);
+            const w = tikzCanvasWidth;
+            const h = tikzCanvasHeight;
             startX = (canvasX - w/2) / tikzScale - tikzOffsetX + w/2;
             startY = (canvasY - h/2) / tikzScale - tikzOffsetY + h/2;
             isDrawing = true;
@@ -1052,8 +1063,8 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
             const rect = tikzCanvas.getBoundingClientRect();
             const canvasX = e.clientX - rect.left;
             const canvasY = e.clientY - rect.top;
-            const w = parseInt(tikzCanvas.style.width);
-            const h = parseInt(tikzCanvas.style.height);
+            const w = tikzCanvasWidth;
+            const h = tikzCanvasHeight;
             const currentX = (canvasX - w/2) / tikzScale - tikzOffsetX + w/2;
             const currentY = (canvasY - h/2) / tikzScale - tikzOffsetY + h/2;
             renderTikzCanvas();
@@ -1089,8 +1100,8 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
             const rect = tikzCanvas.getBoundingClientRect();
             const canvasX = e.clientX - rect.left;
             const canvasY = e.clientY - rect.top;
-            const w = parseInt(tikzCanvas.style.width);
-            const h = parseInt(tikzCanvas.style.height);
+            const w = tikzCanvasWidth;
+            const h = tikzCanvasHeight;
             const endX = (canvasX - w/2) / tikzScale - tikzOffsetX + w/2;
             const endY = (canvasY - h/2) / tikzScale - tikzOffsetY + h/2;
             const strokeColor = document.getElementById('stroke-color').value;
@@ -1147,10 +1158,10 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         // Initialize history after saveHistory function is defined
         saveHistory();
         
+        // First canvas sizing (after DOM is ready)
+        resizeTikzCanvas();
+        
         function renderTikzCanvas() {
-            const w = parseInt(tikzCanvas.style.width);
-            const h = parseInt(tikzCanvas.style.height);
-            tikzCtx.save();
             tikzCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
             tikzCtx.fillStyle = 'white';
             tikzCtx.fillRect(0, 0, w, h);
@@ -1230,9 +1241,9 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         const templateSelect = document.getElementById('template-select');
         templateSelect.addEventListener('change', () => {
             const t = templateSelect.value; if (!t) return; templateSelect.value='';
-            const cx = tikzCanvas.width/2, cy = tikzCanvas.height/2;
-            const cw = parseInt(tikzCanvas.style.width);
-            const ch = parseInt(tikzCanvas.style.height);
+            const cw = tikzCanvasWidth;
+            const ch = tikzCanvasHeight;
+            const cx = cw / 2, cy = ch / 2;
             if (t === 'surface-solid') {
                 tikzObjects.push({ type:'rectangle', x:20, y:cy+40, width:cw-40, height:8, color:'#666', strokeWidth:2, fill:'#666' });
             } else if (t === 'surface-water') {
