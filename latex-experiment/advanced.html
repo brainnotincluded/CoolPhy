@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced LaTeX & TikZ Editor</title>
+    
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    
+    <!-- TikZJax -->
+    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
+    <script src="https://tikzjax.com/v1/tikzjax.js"></script>
+    
+    <!-- Monaco Editor -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            overflow: hidden;
+        }
+        
+        header {
+            padding: 15px 20px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        
+        .btn:hover {
+            background: #1177bb;
+        }
+        
+        .btn-secondary {
+            background: #3e3e42;
+        }
+        
+        .btn-secondary:hover {
+            background: #505050;
+        }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .editor-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #3e3e42;
+            min-width: 0;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            color: #858585;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab:hover {
+            color: #cccccc;
+        }
+        
+        .tab.active {
+            background: #1e1e1e;
+            color: #ffffff;
+            border-bottom: 2px solid #0e639c;
+        }
+        
+        .editor-content {
+            flex: 1;
+            display: none;
+            min-height: 0;
+        }
+        
+        .editor-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #monaco-editor {
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .preview-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        
+        .pane-header {
+            padding: 10px 20px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #1e1e1e;
+        }
+        
+        /* TikZ Editor */
+        .tikz-toolbar {
+            padding: 10px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .tool-btn {
+            padding: 8px 12px;
+            background: #3e3e42;
+            color: #cccccc;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .tool-btn:hover {
+            background: #505050;
+        }
+        
+        .tool-btn.active {
+            background: #0e639c;
+            color: white;
+        }
+        
+        #tikz-canvas-container {
+            flex: 1;
+            position: relative;
+            background: #1e1e1e;
+            overflow: auto;
+        }
+        
+        #tikz-canvas {
+            position: absolute;
+            background: white;
+            cursor: crosshair;
+        }
+        
+        .tikz-controls {
+            padding: 10px;
+            background: #252526;
+            border-top: 1px solid #3e3e42;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        
+        .control-group label {
+            font-size: 12px;
+            color: #cccccc;
+        }
+        
+        .control-group input,
+        .control-group select {
+            padding: 4px 8px;
+            background: #3e3e42;
+            color: #cccccc;
+            border: 1px solid #555;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        /* JSXGraph */
+        #jsxgraph-board {
+            flex: 1;
+            background: white;
+            margin: 20px;
+            border-radius: 4px;
+        }
+        
+        .graph-controls {
+            padding: 15px 20px;
+            background: #252526;
+            border-top: 1px solid #3e3e42;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .input-row input {
+            flex: 1;
+            padding: 6px 10px;
+            background: #3e3e42;
+            color: #cccccc;
+            border: 1px solid #555;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 10px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #3e3e42;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .error {
+            color: #f48771;
+            padding: 10px;
+            background: #5a1d1d;
+            border-radius: 4px;
+            margin: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .code-output {
+            background: #1e1e1e;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 4px;
+            border: 1px solid #3e3e42;
+        }
+        
+        .code-output pre {
+            color: #d4d4d4;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4e4e4e;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>⚡ Advanced LaTeX & TikZ Editor</h1>
+        <div class="header-actions">
+            <button class="btn" id="export-pdf">Export PDF</button>
+            <button class="btn btn-secondary" id="export-latex">Export LaTeX</button>
+            <button class="btn btn-secondary" id="copy-code">Copy Code</button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="editor-pane">
+            <div class="tabs">
+                <button class="tab active" data-tab="latex-editor">LaTeX Editor</button>
+                <button class="tab" data-tab="tikz-visual">TikZ Visual</button>
+                <button class="tab" data-tab="jsxgraph">Graph Plotter</button>
+            </div>
+            
+            <!-- LaTeX Editor with Monaco -->
+            <div id="latex-editor" class="editor-content active">
+                <div id="monaco-editor"></div>
+            </div>
+            
+            <!-- TikZ Visual Editor -->
+            <div id="tikz-visual" class="editor-content">
+                <div class="tikz-toolbar">
+                    <button class="tool-btn active" data-tool="select">Select</button>
+                    <button class="tool-btn" data-tool="line">Line</button>
+                    <button class="tool-btn" data-tool="arrow">Arrow</button>
+                    <button class="tool-btn" data-tool="rectangle">Rectangle</button>
+                    <button class="tool-btn" data-tool="circle">Circle</button>
+                    <button class="tool-btn" data-tool="text">Text</button>
+                    <button class="tool-btn" data-tool="node">Node</button>
+                    <button class="tool-btn" data-tool="curve">Curve</button>
+                </div>
+                <div id="tikz-canvas-container">
+                    <canvas id="tikz-canvas" width="800" height="600"></canvas>
+                </div>
+                <div class="tikz-controls">
+                    <div class="control-group">
+                        <label>Stroke:</label>
+                        <input type="color" id="stroke-color" value="#000000">
+                    </div>
+                    <div class="control-group">
+                        <label>Width:</label>
+                        <input type="number" id="stroke-width" value="1" min="0.5" max="10" step="0.5" style="width: 60px;">
+                    </div>
+                    <div class="control-group">
+                        <label>Fill:</label>
+                        <input type="color" id="fill-color" value="#ffffff">
+                    </div>
+                    <button class="btn btn-secondary" id="clear-tikz">Clear</button>
+                    <button class="btn" id="generate-tikz">Generate TikZ</button>
+                </div>
+            </div>
+            
+            <!-- JSXGraph Plotter -->
+            <div id="jsxgraph" class="editor-content">
+                <div id="jsxgraph-board"></div>
+                <div class="graph-controls">
+                    <div class="input-row">
+                        <input type="text" id="function-input" placeholder="Enter function: f(x) = x^2, sin(x), etc.">
+                        <button class="btn" id="plot-function">Plot</button>
+                    </div>
+                    <div class="input-row">
+                        <label>Points:</label>
+                        <input type="text" id="point-input" placeholder="(x, y) e.g., (2, 3)">
+                        <button class="btn" id="add-point">Add Point</button>
+                        <button class="btn btn-secondary" id="clear-graph">Clear</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="preview-pane">
+            <div class="pane-header">
+                <span>Live Preview</span>
+                <button class="btn btn-secondary" id="refresh-preview">Refresh</button>
+            </div>
+            <div id="preview"></div>
+        </div>
+    </div>
+    
+    <!-- KaTeX -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- JSXGraph -->
+    <script src="https://cdn.jsdelivr.net/npm/jsxgraph@1.7.0/distrib/jsxgraphcore.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsxgraph@1.7.0/distrib/jsxgraph.css">
+    
+    <!-- Monaco Editor -->
+    <script>var require = { paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } };</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.nls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
+    
+    <script>
+        let monacoEditor;
+        let currentTab = 'latex-editor';
+        let tikzObjects = [];
+        let jsxBoard;
+        
+        // Initialize Monaco Editor
+        require(['vs/editor/editor.main'], function() {
+            monacoEditor = monaco.editor.create(document.getElementById('monaco-editor'), {
+                value: `% Physics Problem Example
+\\documentclass{article}
+\\usepackage{tikz}
+\\usepackage{amsmath}
+
+\\begin{document}
+
+\\section{Quantum Mechanics}
+
+The time-dependent Schrödinger equation:
+$$i\\hbar\\frac{\\partial}{\\partial t}\\Psi(\\mathbf{r},t) = \\hat{H}\\Psi(\\mathbf{r},t)$$
+
+\\section{Maxwell's Equations}
+
+$$\\nabla \\cdot \\mathbf{E} = \\frac{\\rho}{\\epsilon_0}$$
+$$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
+
+\\section{Circuit Diagram}
+
+\\begin{tikzpicture}
+  \\draw (0,0) -- (2,0);
+  \\draw (2,0) circle (0.3cm);
+  \\draw (2.3,0) -- (4,0);
+\\end{tikzpicture}
+
+\\end{document}`,
+                language: 'latex',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                fontSize: 14,
+                lineNumbers: 'on',
+                scrollBeyondLastLine: false
+            });
+            
+            // Auto-render on change
+            monacoEditor.onDidChangeModelContent(() => {
+                if (currentTab === 'latex-editor') {
+                    debounceRender();
+                }
+            });
+            
+            // Initial render
+            renderLatex();
+        });
+        
+        // Tab switching
+        const tabs = document.querySelectorAll('.tab');
+        const editorContents = document.querySelectorAll('.editor-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetId = tab.dataset.tab;
+                currentTab = targetId;
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                editorContents.forEach(ec => ec.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(targetId).classList.add('active');
+                
+                if (targetId === 'jsxgraph' && !jsxBoard) {
+                    initJSXGraph();
+                }
+                
+                if (targetId === 'tikz-visual') {
+                    renderTikzPreview();
+                }
+            });
+        });
+        
+        // LaTeX rendering
+        let renderTimeout;
+        function debounceRender() {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(renderLatex, 500);
+        }
+        
+        function renderLatex() {
+            const code = monacoEditor.getValue();
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            
+            try {
+                // Extract content between \begin{document} and \end{document}
+                const docMatch = code.match(/\\begin\{document\}([\s\S]*?)\\end\{document\}/);
+                let content = docMatch ? docMatch[1] : code;
+                
+                // Convert LaTeX to HTML
+                content = content.replace(/\\section\{([^}]+)\}/g, '<h2>$1</h2>');
+                content = content.replace(/\\subsection\{([^}]+)\}/g, '<h3>$1</h3>');
+                content = content.replace(/\\textbf\{([^}]+)\}/g, '<strong>$1</strong>');
+                content = content.replace(/\\textit\{([^}]+)\}/g, '<em>$1</em>');
+                
+                // Handle TikZ pictures - wrap them in script tags for TikZJax
+                content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, 
+                    '<div style="background: white; padding: 20px; margin: 10px 0; border-radius: 4px;">' +
+                    '<script type="text/tikz">$1</script></div>');
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
+                preview.appendChild(tempDiv);
+                
+                // Render math with KaTeX
+                renderMathInElement(preview, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '\\(', right: '\\)', display: false}
+                    ],
+                    throwOnError: false
+                });
+                
+                // Process TikZ diagrams with TikZJax
+                if (typeof tikzjax !== 'undefined') {
+                    setTimeout(() => {
+                        const tikzScripts = preview.querySelectorAll('script[type="text/tikz"]');
+                        tikzScripts.forEach(script => {
+                            if (!script.dataset.processed) {
+                                tikzjax.process(script);
+                                script.dataset.processed = 'true';
+                            }
+                        });
+                    }, 100);
+                }
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.textContent = 'Error: ' + error.message;
+                preview.appendChild(errorDiv);
+            }
+        }
+        
+        // TikZ Visual Editor
+        const tikzCanvas = document.getElementById('tikz-canvas');
+        const tikzCtx = tikzCanvas.getContext('2d');
+        let currentTool = 'select';
+        let isDrawing = false;
+        let startX, startY;
+        let tempShape = null;
+        
+        // Tool selection
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+            });
+        });
+        
+        tikzCanvas.addEventListener('mousedown', (e) => {
+            const rect = tikzCanvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            isDrawing = true;
+            
+            if (currentTool === 'text') {
+                const text = prompt('Enter text:');
+                if (text) {
+                    tikzObjects.push({
+                        type: 'text',
+                        x: startX,
+                        y: startY,
+                        text: text,
+                        color: document.getElementById('stroke-color').value
+                    });
+                    renderTikzCanvas();
+                }
+                isDrawing = false;
+            }
+        });
+        
+        tikzCanvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            
+            const rect = tikzCanvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            
+            renderTikzCanvas();
+            
+            tikzCtx.strokeStyle = document.getElementById('stroke-color').value;
+            tikzCtx.lineWidth = document.getElementById('stroke-width').value;
+            tikzCtx.fillStyle = document.getElementById('fill-color').value;
+            
+            switch (currentTool) {
+                case 'line':
+                    tikzCtx.beginPath();
+                    tikzCtx.moveTo(startX, startY);
+                    tikzCtx.lineTo(currentX, currentY);
+                    tikzCtx.stroke();
+                    break;
+                case 'arrow':
+                    drawArrow(tikzCtx, startX, startY, currentX, currentY);
+                    break;
+                case 'rectangle':
+                    tikzCtx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+                    break;
+                case 'circle':
+                    const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+                    tikzCtx.beginPath();
+                    tikzCtx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                    tikzCtx.stroke();
+                    break;
+            }
+        });
+        
+        tikzCanvas.addEventListener('mouseup', (e) => {
+            if (!isDrawing) return;
+            
+            const rect = tikzCanvas.getBoundingClientRect();
+            const endX = e.clientX - rect.left;
+            const endY = e.clientY - rect.top;
+            
+            const strokeColor = document.getElementById('stroke-color').value;
+            const strokeWidth = document.getElementById('stroke-width').value;
+            const fillColor = document.getElementById('fill-color').value;
+            
+            switch (currentTool) {
+                case 'line':
+                    tikzObjects.push({
+                        type: 'line',
+                        x1: startX, y1: startY,
+                        x2: endX, y2: endY,
+                        color: strokeColor,
+                        width: strokeWidth
+                    });
+                    break;
+                case 'arrow':
+                    tikzObjects.push({
+                        type: 'arrow',
+                        x1: startX, y1: startY,
+                        x2: endX, y2: endY,
+                        color: strokeColor,
+                        width: strokeWidth
+                    });
+                    break;
+                case 'rectangle':
+                    tikzObjects.push({
+                        type: 'rectangle',
+                        x: startX, y: startY,
+                        width: endX - startX,
+                        height: endY - startY,
+                        color: strokeColor,
+                        strokeWidth: strokeWidth,
+                        fill: fillColor
+                    });
+                    break;
+                case 'circle':
+                    const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                    tikzObjects.push({
+                        type: 'circle',
+                        x: startX, y: startY,
+                        radius: radius,
+                        color: strokeColor,
+                        strokeWidth: strokeWidth,
+                        fill: fillColor
+                    });
+                    break;
+                case 'node':
+                    const nodeText = prompt('Enter node text:');
+                    if (nodeText) {
+                        tikzObjects.push({
+                            type: 'node',
+                            x: startX, y: startY,
+                            text: nodeText,
+                            color: strokeColor
+                        });
+                    }
+                    break;
+            }
+            
+            isDrawing = false;
+            renderTikzCanvas();
+        });
+        
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headlen = 10;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        function renderTikzCanvas() {
+            tikzCtx.fillStyle = 'white';
+            tikzCtx.fillRect(0, 0, tikzCanvas.width, tikzCanvas.height);
+            
+            // Draw grid
+            tikzCtx.strokeStyle = '#f0f0f0';
+            tikzCtx.lineWidth = 0.5;
+            for (let i = 0; i < tikzCanvas.width; i += 20) {
+                tikzCtx.beginPath();
+                tikzCtx.moveTo(i, 0);
+                tikzCtx.lineTo(i, tikzCanvas.height);
+                tikzCtx.stroke();
+            }
+            for (let i = 0; i < tikzCanvas.height; i += 20) {
+                tikzCtx.beginPath();
+                tikzCtx.moveTo(0, i);
+                tikzCtx.lineTo(tikzCanvas.width, i);
+                tikzCtx.stroke();
+            }
+            
+            // Draw all objects
+            tikzObjects.forEach(obj => {
+                tikzCtx.strokeStyle = obj.color || '#000';
+                tikzCtx.lineWidth = obj.strokeWidth || obj.width || 1;
+                tikzCtx.fillStyle = obj.fill || 'transparent';
+                
+                switch (obj.type) {
+                    case 'line':
+                        tikzCtx.beginPath();
+                        tikzCtx.moveTo(obj.x1, obj.y1);
+                        tikzCtx.lineTo(obj.x2, obj.y2);
+                        tikzCtx.stroke();
+                        break;
+                    case 'arrow':
+                        drawArrow(tikzCtx, obj.x1, obj.y1, obj.x2, obj.y2);
+                        break;
+                    case 'rectangle':
+                        tikzCtx.strokeRect(obj.x, obj.y, obj.width, obj.height);
+                        break;
+                    case 'circle':
+                        tikzCtx.beginPath();
+                        tikzCtx.arc(obj.x, obj.y, obj.radius, 0, 2 * Math.PI);
+                        tikzCtx.stroke();
+                        break;
+                    case 'text':
+                    case 'node':
+                        tikzCtx.fillStyle = obj.color;
+                        tikzCtx.font = '14px Arial';
+                        tikzCtx.fillText(obj.text, obj.x, obj.y);
+                        break;
+                }
+            });
+        }
+        
+        function renderTikzPreview() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '<div class="code-output"><h3>TikZ Code:</h3><pre>' + generateTikZCode() + '</pre></div>';
+        }
+        
+        document.getElementById('clear-tikz').addEventListener('click', () => {
+            tikzObjects = [];
+            renderTikzCanvas();
+        });
+        
+        document.getElementById('generate-tikz').addEventListener('click', () => {
+            renderTikzPreview();
+        });
+        
+        function generateTikZCode() {
+            let code = '\\begin{tikzpicture}[scale=0.1]\n';
+            
+            tikzObjects.forEach(obj => {
+                const x1 = (obj.x1 / 10).toFixed(2);
+                const y1 = (obj.y1 / 10).toFixed(2);
+                const x2 = (obj.x2 / 10).toFixed(2);
+                const y2 = (obj.y2 / 10).toFixed(2);
+                const x = (obj.x / 10).toFixed(2);
+                const y = (obj.y / 10).toFixed(2);
+                
+                switch (obj.type) {
+                    case 'line':
+                        code += `  \\draw (${x1},${y1}) -- (${x2},${y2});\n`;
+                        break;
+                    case 'arrow':
+                        code += `  \\draw[->,thick] (${x1},${y1}) -- (${x2},${y2});\n`;
+                        break;
+                    case 'rectangle':
+                        const w = (obj.width / 10).toFixed(2);
+                        const h = (obj.height / 10).toFixed(2);
+                        code += `  \\draw (${x},${y}) rectangle +(${w},${h});\n`;
+                        break;
+                    case 'circle':
+                        const r = (obj.radius / 10).toFixed(2);
+                        code += `  \\draw (${x},${y}) circle (${r});\n`;
+                        break;
+                    case 'text':
+                        code += `  \\node at (${x},${y}) {${obj.text}};\n`;
+                        break;
+                    case 'node':
+                        code += `  \\node[draw] at (${x},${y}) {${obj.text}};\n`;
+                        break;
+                }
+            });
+            
+            code += '\\end{tikzpicture}';
+            return code;
+        }
+        
+        // JSXGraph
+        function initJSXGraph() {
+            jsxBoard = JXG.JSXGraph.initBoard('jsxgraph-board', {
+                boundingbox: [-10, 10, 10, -10],
+                axis: true,
+                showNavigation: true,
+                showCopyright: false
+            });
+        }
+        
+        document.getElementById('plot-function').addEventListener('click', () => {
+            const funcInput = document.getElementById('function-input').value;
+            
+            try {
+                // Parse f(x) = expression
+                let expr = funcInput.replace(/f\(x\)\s*=\s*/, '');
+                expr = expr.replace(/\^/g, '**');
+                
+                jsxBoard.create('functiongraph', [
+                    function(x) { return eval(expr); }
+                ], {strokeColor: '#' + Math.floor(Math.random()*16777215).toString(16)});
+                
+                document.getElementById('function-input').value = '';
+            } catch (e) {
+                alert('Error plotting function: ' + e.message);
+            }
+        });
+        
+        document.getElementById('add-point').addEventListener('click', () => {
+            const pointInput = document.getElementById('point-input').value;
+            const match = pointInput.match(/\(([^,]+),([^)]+)\)/);
+            
+            if (match) {
+                const x = parseFloat(match[1]);
+                const y = parseFloat(match[2]);
+                jsxBoard.create('point', [x, y], {name: `(${x},${y})`});
+                document.getElementById('point-input').value = '';
+            }
+        });
+        
+        document.getElementById('clear-graph').addEventListener('click', () => {
+            if (jsxBoard) {
+                JXG.JSXGraph.freeBoard(jsxBoard);
+                initJSXGraph();
+            }
+        });
+        
+        // Export functions
+        document.getElementById('export-latex').addEventListener('click', () => {
+            const code = monacoEditor.getValue();
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document.tex';
+            a.click();
+        });
+        
+        document.getElementById('copy-code').addEventListener('click', () => {
+            navigator.clipboard.writeText(monacoEditor.getValue());
+            alert('Code copied to clipboard!');
+        });
+        
+        document.getElementById('export-pdf').addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(16);
+            doc.text('LaTeX Document Export', 20, 20);
+            doc.setFontSize(10);
+            doc.text('Note: For full LaTeX rendering, compile the .tex file with a LaTeX compiler.', 20, 30);
+            doc.text('This PDF contains the LaTeX source code.', 20, 37);
+            
+            const code = monacoEditor.getValue();
+            const lines = doc.splitTextToSize(code, 170);
+            doc.setFontSize(9);
+            doc.text(lines, 20, 50);
+            
+            doc.save('latex-document.pdf');
+        });
+        
+        document.getElementById('refresh-preview').addEventListener('click', renderLatex);
+        
+        // Initial canvas render
+        renderTikzCanvas();
+    </script>
+</body>
+</html>
