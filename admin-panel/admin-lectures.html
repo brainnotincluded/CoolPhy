@@ -4,27 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin: Create Lecture (Full Editor) - CoolPhy</title>
-    
+
     <!-- KaTeX CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    
+
     <!-- TikZJax -->
     <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
     <script src="https://tikzjax.com/v1/tikzjax.js"></script>
-    
+
     <!-- Monaco Editor -->
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Source+Serif+Pro:wght@400;600&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             height: 100vh;
@@ -34,7 +30,7 @@
             color: #d4d4d4;
             overflow: hidden;
         }
-        
+
         header {
             padding: 15px 20px;
             background: #252526;
@@ -43,17 +39,11 @@
             justify-content: space-between;
             align-items: center;
         }
-        
-        h1 {
-            font-size: 20px;
-            font-weight: 600;
-        }
-        
-        .header-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
+
+        h1 { font-size: 20px; font-weight: 600; }
+
+        .header-actions { display: flex; gap: 10px; }
+
         .btn {
             padding: 6px 12px;
             background: #0e639c;
@@ -64,25 +54,14 @@
             font-size: 13px;
             transition: background 0.2s;
         }
-        
-        .btn:hover {
-            background: #1177bb;
-        }
-        
-        .btn-secondary {
-            background: #3e3e42;
-        }
-        
-        .btn-secondary:hover {
-            background: #505050;
-        }
-        
-        .container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-        
+
+        .btn:hover { background: #1177bb; }
+
+        .btn-secondary { background: #3e3e42; }
+        .btn-secondary:hover { background: #505050; }
+
+        .container { display: flex; flex: 1; overflow: hidden; }
+
         .editor-pane {
             flex: 1;
             display: flex;
@@ -90,13 +69,13 @@
             border-right: 1px solid #3e3e42;
             min-width: 0;
         }
-        
+
         .tabs {
             display: flex;
             background: #2d2d30;
             border-bottom: 1px solid #3e3e42;
         }
-        
+
         .tab {
             padding: 10px 20px;
             background: transparent;
@@ -107,61 +86,57 @@
             transition: all 0.2s;
             border-bottom: 2px solid transparent;
         }
-        
-        .tab:hover {
-            color: #cccccc;
-        }
-        
+
+        .tab:hover { color: #cccccc; }
+
         .tab.active {
             background: #1e1e1e;
             color: #ffffff;
             border-bottom: 2px solid #0e639c;
         }
-        
+
         .editor-content {
             flex: 1;
             display: none;
             min-height: 0;
         }
-        
+
         .editor-content.active {
             display: flex;
             flex-direction: column;
         }
-        
-        #monaco-editor,
-        #monaco-solution {
+
+        #lecture-editor-pane {
+            flex: 1;
+            min-height: 0;
+        }
+
+        #monaco-lecture {
             flex: 1;
             min-height: 0;
             height: 100%;
             width: 100%;
         }
-        #latex-editor,
-        #solution-editor {
-            flex: 1;
-            min-height: 0;
-        }
-        
+
         .preview-pane {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-width: 0;
         }
-        
-        /* Images: fixed thumbnail size; content centered with 5px inner margin */
+
+        /* Thumbnails */
         #preview img {
-            width: 250px !important;           /* total box size */
+            width: 250px !important;
             height: 250px !important;
-            padding: 5px;                      /* inner margin around content */
+            padding: 5px;
             box-sizing: border-box;
-            object-fit: contain;               /* scale to max fit inside 240x240 area */
+            object-fit: contain;
             display: inline-block;
-            margin: 5px;                       /* space between thumbnails */
+            margin: 5px;
             vertical-align: middle;
         }
-        
-        /* SVG/iframes (TikZ, JSXGraph, etc.) still use available width */
+
         #preview svg {
             width: 100%;
             height: auto;
@@ -170,6 +145,7 @@
             display: block;
             margin: 10px auto;
         }
+
         #preview iframe {
             width: 100%;
             max-height: calc(100vh - 160px);
@@ -177,7 +153,7 @@
             margin: 10px auto;
             border: none;
         }
-        
+
         .pane-header {
             padding: 10px 20px;
             background: #2d2d30;
@@ -188,67 +164,35 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         #preview {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
             background: #1e1e1e;
         }
-        
-        .preview-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            padding: 8px 20px;
-            background: #252526;
-            border-bottom: 1px solid #3e3e42;
+
+        .info-text {
             font-size: 12px;
+            color: #858585;
+            margin-top: 5px;
         }
-        .preview-controls label { color: #ccc; }
-        .preview-controls input, .preview-controls select {
-            background: #3e3e42; color: #ccc; border: 1px solid #555; border-radius: 3px; padding: 4px 6px;
+
+        .upload-status {
+            font-size: 12px;
+            margin-top: 6px;
+            color: #cccccc;
         }
-        
-        .tikz-frame {
-            display: inline-block;
-            vertical-align: top;
+
+        #video-preview {
             width: 100%;
-            margin: 8px;
-            background: #fff;
+            max-height: 320px;
             border-radius: 4px;
+            margin-top: 12px;
+            display: none;
+            background: #000;
         }
-        .tikz-card-ctrl {
-            position: relative;
-            margin-top: 4px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            font-size: 12px;
-            color: #ccc;
-        }
-        .tikz-card-ctrl input, .tikz-card-ctrl select {
-            background: #3e3e42; color: #ccc; border: 1px solid #555; border-radius: 3px; padding: 2px 4px;
-        }
-        .tikz-card {
-            display: inline-block;
-            vertical-align: top;
-            margin: 5px; /* match image thumbnails */
-            background: transparent;
-            width: 250px !important; /* fixed thumbnail width so it doesn't eat full line */
-        }
-        
-        .tikz-frame {
-            width: 250px !important;
-            height: 250px !important;
-            overflow: hidden;
-        }
-        .tikz-frame iframe {
-            width: 100% !important;
-            height: 100% !important;
-        }
-        
-        /* TikZ Editor */
+
         .tikz-toolbar {
             padding: 10px;
             background: #252526;
@@ -257,7 +201,7 @@
             gap: 5px;
             flex-wrap: wrap;
         }
-        
+
         .tool-btn {
             padding: 8px 12px;
             background: #3e3e42;
@@ -267,42 +211,24 @@
             cursor: pointer;
             font-size: 12px;
         }
-        
-        .tool-btn:hover {
-            background: #505050;
-        }
-        
-        .tool-btn.active {
-            background: #0e639c;
-            color: white;
-        }
-        
+
+        .tool-btn.active { background: #0e639c; color: white; }
+        .tool-btn:hover { background: #505050; }
+
         #tikz-canvas-container {
             flex: 1;
             position: relative;
             background: #1e1e1e;
             overflow: auto;
         }
-        
-        #tikz-canvas-container:fullscreen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #1e1e1e;
-        }
-        
-        #tikz-canvas-container:fullscreen #tikz-canvas {
-            width: 95vw !important;
-            height: 95vh !important;
-        }
-        
+
         #tikz-canvas {
             position: absolute;
             background: white;
             cursor: crosshair;
-            touch-action: none; /* better Apple Pencil support */
+            touch-action: none;
         }
-        
+
         .tikz-controls {
             padding: 10px;
             background: #252526;
@@ -312,20 +238,10 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        
-        .control-group {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-        }
-        
-        .control-group label {
-            font-size: 12px;
-            color: #cccccc;
-        }
-        
-        .control-group input,
-        .control-group select {
+
+        .control-group { display: flex; gap: 5px; align-items: center; }
+        .control-group label { font-size: 12px; color: #cccccc; }
+        .control-group input, .control-group select {
             padding: 4px 8px;
             background: #3e3e42;
             color: #cccccc;
@@ -333,28 +249,21 @@
             border-radius: 3px;
             font-size: 12px;
         }
-        
-        /* JSXGraph */
+
         #jsxgraph-board {
             flex: 1;
             background: white;
             margin: 20px;
             border-radius: 4px;
         }
-        
+
         .graph-controls {
             padding: 15px 20px;
             background: #252526;
             border-top: 1px solid #3e3e42;
         }
-        
-        .input-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            align-items: center;
-        }
-        
+
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         .input-row input {
             flex: 1;
             padding: 6px 10px;
@@ -365,20 +274,7 @@
             font-family: 'Courier New', monospace;
             font-size: 13px;
         }
-        
-        textarea {
-            width: 100%;
-            padding: 10px;
-            background: #1e1e1e;
-            color: #d4d4d4;
-            border: 1px solid #3e3e42;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
-            line-height: 1.5;
-            resize: vertical;
-            min-height: 100px;
-        }
-        
+
         .error {
             color: #f48771;
             padding: 10px;
@@ -388,7 +284,7 @@
             font-family: monospace;
             font-size: 12px;
         }
-        
+
         .code-output {
             background: #1e1e1e;
             padding: 15px;
@@ -396,7 +292,7 @@
             border-radius: 4px;
             border: 1px solid #3e3e42;
         }
-        
+
         .code-output pre {
             color: #d4d4d4;
             font-family: 'Courier New', monospace;
@@ -404,240 +300,201 @@
             line-height: 1.5;
             white-space: pre-wrap;
         }
-        /* Preview hover mapping */
-        .src:hover, .tikz-card:hover { outline: 2px solid #0e639c; outline-offset: 2px; background: rgba(14,99,156,0.08); }
-        /* Monaco highlight */
-        .monaco-editor .code-highlight { background: rgba(14,99,156,0.35); border-bottom: 1px solid #0e639c; }
-        
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #1e1e1e;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #424242;
-            border-radius: 5px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #4e4e4e;
+
+        .settings-group h2 { margin-bottom: 15px; font-size: 18px; color: #ffffff; }
+        .settings-group label { font-size: 13px; color: #ccc; display:block; margin-bottom: 6px; }
+        .settings-group input, .settings-group select, .settings-group textarea {
+            width: 100%; padding: 8px; background:#1e1e1e; color:#d4d4d4; border:1px solid #3e3e42; border-radius:4px; font-size:13px;
         }
 
-        /* Video upload styles */
-        .upload-status {
-            margin-top: 10px;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #cccccc;
-        }
-        #video-preview {
-            margin-top: 10px;
-            max-width: 100%;
-            border-radius: 4px;
-            display: none;
-        }
+        #save-message { margin-top:15px; padding:12px; border-radius:4px; display:none; font-size:13px; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>🎓 Create Lecture (Full Editor)</h1>
-        <div class="header-actions">
-            <button class="btn" id="save-lecture-btn" style="background:#107c10;">💾 Save Lecture</button>
-            <button class="btn" id="export-pdf">Export PDF</button>
-            <button class="btn btn-secondary" id="export-latex">Export LaTeX</button>
-            <button class="btn btn-secondary" id="copy-code">Copy Code</button>
-            <a href="index.html" class="btn btn-secondary" style="text-decoration:none;display:inline-block;">← Dashboard</a>
-            <a href="auth.html" class="btn btn-secondary" id="login-link" style="text-decoration:none;display:inline-block;">Login</a>
-            <button class="btn btn-secondary" id="logout-btn" style="display:none;">Logout</button>
+<header>
+    <h1>🎓 Create Lecture (Full Editor)</h1>
+    <div class="header-actions">
+        <button class="btn" id="save-lecture-btn" style="background:#107c10;">💾 Save Lecture</button>
+        <button class="btn" id="export-pdf">Export PDF</button>
+        <button class="btn btn-secondary" id="export-latex">Export LaTeX</button>
+        <button class="btn btn-secondary" id="copy-code">Copy Code</button>
+        <a href="index.html" class="btn btn-secondary" style="text-decoration:none;display:inline-block;">← Dashboard</a>
+        <a href="auth.html" class="btn btn-secondary" id="login-link" style="text-decoration:none;display:inline-block;">Login</a>
+        <button class="btn btn-secondary" id="logout-btn" style="display:none;">Logout</button>
+    </div>
+</header>
+
+<div class="container">
+    <div class="editor-pane">
+        <div class="tabs">
+            <button class="tab active" data-tab="lecture-editor">Lecture</button>
+            <button class="tab" data-tab="tikz-visual">TikZ Visual</button>
+            <button class="tab" data-tab="jsxgraph">Graph Plotter</button>
+            <button class="tab" data-tab="lecture-settings">Lecture Settings</button>
         </div>
-    </header>
-    
-    <div class="container">
-        <div class="editor-pane">
-            <div class="tabs">
-                <button class="tab active" data-tab="latex-editor">Lecture Content</button>
-                <button class="tab" data-tab="solution-editor">Additional Notes</button>
-                <button class="tab" data-tab="tikz-visual">TikZ Visual</button>
-                <button class="tab" data-tab="jsxgraph">Graph Plotter</button>
-                <button class="tab" data-tab="lecture-settings">Lecture Settings</button>
+
+        <!-- Lecture LaTeX Editor -->
+        <div id="lecture-editor" class="editor-content active">
+            <div id="monaco-lecture"></div>
+        </div>
+
+        <!-- TikZ Visual Editor (same tools as tasks) -->
+        <div id="tikz-visual" class="editor-content">
+            <div class="tikz-toolbar">
+                <button class="tool-btn active" data-tool="select">Select</button>
+                <button class="tool-btn" data-tool="line">Line</button>
+                <button class="tool-btn" data-tool="arrow">Arrow</button>
+                <button class="tool-btn" data-tool="rectangle">Rectangle</button>
+                <button class="tool-btn" data-tool="circle">Circle</button>
+                <button class="tool-btn" data-tool="text">Text</button>
+                <button class="tool-btn" data-tool="node">Node</button>
+                <button class="tool-btn" data-tool="curve">Curve</button>
+                <button class="tool-btn" data-tool="eraser">Eraser</button>
+                <button class="tool-btn" id="toggle-touch">Touch: Off</button>
+                <button class="tool-btn" id="undo-btn" title="Undo (Cmd+Z)">↺ Undo</button>
+                <button class="tool-btn" id="redo-btn" title="Redo (Cmd+Shift+Z)">↻ Redo</button>
+                <button class="tool-btn" id="zoom-in" title="Zoom In (+)">+</button>
+                <button class="tool-btn" id="zoom-out" title="Zoom Out (-)">-</button>
+                <button class="tool-btn" id="zoom-reset" title="Reset Zoom">100%</button>
+                <button class="tool-btn" id="fullscreen-btn" title="Fullscreen">⛶</button>
+                <select id="template-select" class="tool-btn" style="padding:6px 8px;">
+                    <option value="">Add template…</option>
+                    <option value="surface-solid">Solid surface</option>
+                    <option value="surface-water">Water surface</option>
+                    <option value="spring">Spring</option>
+                    <option value="pulley-fixed">Pulley (fixed)</option>
+                    <option value="pulley-movable">Pulley (movable)</option>
+                    <option value="balloon">Balloon</option>
+                </select>
             </div>
-            
-            <!-- LaTeX Editor with Monaco - Lecture Content -->
-            <div id="latex-editor" class="editor-content active">
-                <div id="monaco-editor"></div>
+            <div id="tikz-canvas-container">
+                <canvas id="tikz-canvas" width="1600" height="1200" style="width:800px;height:600px;"></canvas>
             </div>
-            
-            <!-- Additional Notes Editor -->
-            <div id="solution-editor" class="editor-content">
-                <div id="monaco-solution"></div>
+            <div class="tikz-controls">
+                <div class="control-group">
+                    <label>Stroke:</label>
+                    <input type="color" id="stroke-color" value="#000000">
+                </div>
+                <div class="control-group">
+                    <label>Width:</label>
+                    <input type="number" id="stroke-width" value="1" min="0.5" max="10" step="0.5" style="width: 60px;">
+                </div>
+                <div class="control-group">
+                    <label>Fill:</label>
+                    <input type="color" id="fill-color" value="#ffffff">
+                </div>
+                <button class="btn btn-secondary" id="clear-tikz">Clear</button>
+                <button class="btn" id="generate-tikz">Generate TikZ</button>
             </div>
-            
-            <!-- TikZ Visual Editor -->
-            <div id="tikz-visual" class="editor-content">
-                <div class="tikz-toolbar">
-                    <button class="tool-btn active" data-tool="select">Select</button>
-                    <button class="tool-btn" data-tool="line">Line</button>
-                    <button class="tool-btn" data-tool="arrow">Arrow</button>
-                    <button class="tool-btn" data-tool="rectangle">Rectangle</button>
-                    <button class="tool-btn" data-tool="circle">Circle</button>
-                    <button class="tool-btn" data-tool="text">Text</button>
-                    <button class="tool-btn" data-tool="node">Node</button>
-                    <button class="tool-btn" data-tool="curve">Curve</button>
-                    <button class="tool-btn" data-tool="eraser">Eraser</button>
-                    <button class="tool-btn" id="toggle-touch">Touch: Off</button>
-                    <button class="tool-btn" id="undo-btn" title="Undo (Cmd+Z)">↺ Undo</button>
-                    <button class="tool-btn" id="redo-btn" title="Redo (Cmd+Shift+Z)">↻ Redo</button>
-                    <button class="tool-btn" id="zoom-in" title="Zoom In (+)">+</button>
-                    <button class="tool-btn" id="zoom-out" title="Zoom Out (-)">-</button>
-                    <button class="tool-btn" id="zoom-reset" title="Reset Zoom">100%</button>
-                    <button class="tool-btn" id="fullscreen-btn" title="Fullscreen">⛶</button>
-                    <select id="template-select" class="tool-btn" style="padding:6px 8px;">
-                        <option value="">Add template…</option>
-                        <option value="surface-solid">Solid surface</option>
-                        <option value="surface-water">Water surface</option>
-                        <option value="spring">Spring</option>
-                        <option value="pulley-fixed">Pulley (fixed)</option>
-                        <option value="pulley-movable">Pulley (movable)</option>
-                        <option value="balloon">Balloon</option>
+        </div>
+
+        <!-- JSXGraph Plotter -->
+        <div id="jsxgraph" class="editor-content">
+            <div id="jsxgraph-board"></div>
+            <div class="graph-controls">
+                <div class="input-row">
+                    <input type="text" id="function-input" placeholder="Enter function: f(x) = x^2, sin(x), etc.">
+                    <button class="btn" id="plot-function">Plot</button>
+                </div>
+                <div class="input-row">
+                    <label>Points:</label>
+                    <input type="text" id="point-input" placeholder="(x, y) e.g., (2, 3)">
+                    <button class="btn" id="add-point">Add Point</button>
+                    <button class="btn btn-secondary" id="clear-graph">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lecture Settings -->
+        <div id="lecture-settings" class="editor-content">
+            <div class="settings-group" style="padding:20px;overflow-y:auto;height:100%;">
+                <h2>Lecture Settings</h2>
+                <div class="form-group">
+                    <label for="lecture-title">Title *</label>
+                    <input type="text" id="lecture-title" placeholder="Lecture title">
+                </div>
+                <div class="form-group">
+                    <label for="lecture-subject">Subject *</label>
+                    <select id="lecture-subject">
+                        <option value="">Select subject</option>
+                        <option value="physics">Physics</option>
+                        <option value="math">Mathematics</option>
+                        <option value="cs">Computer Science</option>
                     </select>
                 </div>
-                <div id="tikz-canvas-container" style="position:relative;">
-                    <canvas id="tikz-canvas" width="1600" height="1200" style="width:800px;height:600px;"></canvas>
+                <div class="form-group">
+                    <label for="lecture-summary">Summary</label>
+                    <textarea id="lecture-summary" rows="3" placeholder="Short description of lecture"></textarea>
                 </div>
-                <div class="tikz-controls">
-                    <div class="control-group">
-                        <label>Stroke:</label>
-                        <input type="color" id="stroke-color" value="#000000">
-                    </div>
-                    <div class="control-group">
-                        <label>Width:</label>
-                        <input type="number" id="stroke-width" value="1" min="0.5" max="10" step="0.5" style="width: 60px;">
-                    </div>
-                    <div class="control-group">
-                        <label>Fill:</label>
-                        <input type="color" id="fill-color" value="#ffffff">
-                    </div>
-                    <button class="btn btn-secondary" id="clear-tikz">Clear</button>
-                    <button class="btn" id="generate-tikz">Generate TikZ</button>
+                <div class="form-group">
+                    <label for="lecture-tags">Tags (comma-separated)</label>
+                    <input type="text" id="lecture-tags" placeholder="quantum, interference, advanced">
                 </div>
-            </div>
-            
-            <!-- JSXGraph Plotter -->
-            <div id="jsxgraph" class="editor-content">
-                <div id="jsxgraph-board"></div>
-                <div class="graph-controls">
-                    <div class="input-row">
-                        <input type="text" id="function-input" placeholder="Enter function: f(x) = x^2, sin(x), etc.">
-                        <button class="btn" id="plot-function">Plot</button>
-                    </div>
-                    <div class="input-row">
-                        <label>Points:</label>
-                        <input type="text" id="point-input" placeholder="(x, y) e.g., (2, 3)">
-                        <button class="btn" id="add-point">Add Point</button>
-                        <button class="btn btn-secondary" id="clear-graph">Clear</button>
-                    </div>
+                <div class="form-group">
+                    <label for="lecture-level">Level *</label>
+                    <select id="lecture-level">
+                        <option value="basic">Basic</option>
+                        <option value="advanced">Advanced</option>
+                        <option value="olympiad">Olympiad</option>
+                    </select>
                 </div>
-            </div>
-            
-            <!-- Lecture Settings -->
-            <div id="lecture-settings" class="editor-content">
-                <div style="padding:20px;overflow-y:auto;height:100%;">
-                    <h2 style="margin-bottom:20px;font-size:18px;color:#ffffff;">Lecture Settings</h2>
-                    <div style="margin-bottom:15px;">
-                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Title *</label>
-                        <input type="text" id="lecture-title" placeholder="Lecture title" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
-                    </div>
-                    <div style="display:flex;gap:15px;margin-bottom:15px;">
-                        <div style="flex:1;">
-                            <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Subject *</label>
-                            <select id="lecture-subject" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
-                                <option value="">Select subject</option>
-                                <option value="physics">Physics</option>
-                                <option value="math">Math</option>
-                                <option value="cs">Computer Science</option>
-                            </select>
-                        </div>
-                        <div style="flex:1;">
-                            <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Level *</label>
-                            <select id="lecture-level" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
-                                <option value="basic">Basic</option>
-                                <option value="advanced">Advanced</option>
-                                <option value="olympiad">Olympiad</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style="margin-bottom:15px;">
-                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Summary</label>
-                        <textarea id="lecture-summary" rows="3" placeholder="Brief description of the lecture" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;"></textarea>
-                    </div>
-                    <div style="margin-bottom:15px;">
-                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Tags (comma-separated)</label>
-                        <input type="text" id="lecture-tags" placeholder="quantum-mechanics, physics, advanced" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
-                    </div>
-                    <div style="margin-bottom:15px;">
-                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Status</label>
-                        <select id="lecture-status" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
-                            <option value="draft">Draft</option>
-                            <option value="active">Active</option>
-                            <option value="archived">Archived</option>
-                        </select>
-                    </div>
-                    <div style="margin-bottom:15px;">
-                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Upload Lecture Video</label>
-                        <input type="file" id="video-file" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/x-msvideo" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:12px;">
-                        <div style="font-size:11px;color:#858585;margin-top:5px;">MP4, MOV, WebM formats. File uploads require an admin token.</div>
-                        <div class="upload-status" id="video-upload-status">No video uploaded yet.</div>
-                        <video id="video-preview" controls></video>
-                        <button type="button" class="btn btn-secondary" id="clear-video-btn" style="margin-top:10px;display:none;">Remove Uploaded Video</button>
-                    </div>
-                    <div style="margin-bottom:15px;">
-                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Video URL (external)</label>
-                        <input type="url" id="video-url" placeholder="https://youtube.com/watch?v=... or direct video link" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
-                        <div style="font-size:11px;color:#858585;margin-top:5px;">YouTube, Vimeo, or direct MP4/WebM link</div>
-                    </div>
-                    <div style="margin-bottom:15px;">
-                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Video Transcript</label>
-                        <textarea id="video-transcript" rows="4" placeholder="Transcript of the video content (optional)" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;"></textarea>
-                        <div style="font-size:11px;color:#858585;margin-top:5px;">Helps with accessibility and searchability</div>
-                    </div>
-                    <div id="save-message" style="margin-top:15px;padding:12px;border-radius:4px;display:none;font-size:13px;"></div>
+                <div class="form-group">
+                    <label for="lecture-status">Status *</label>
+                    <select id="lecture-status">
+                        <option value="draft">Draft</option>
+                        <option value="active">Active</option>
+                        <option value="archived">Archived</option>
+                    </select>
                 </div>
+                <div class="form-group">
+                    <label for="video-file">Upload Lecture Video</label>
+                    <input type="file" id="video-file" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/x-msvideo">
+                    <div class="info-text">MP4, MOV, WebM formats. File uploads require an admin token.</div>
+                    <div class="upload-status" id="video-upload-status">No video uploaded yet.</div>
+                    <video id="video-preview" controls></video>
+                    <button type="button" class="btn btn-secondary" id="clear-video-btn" style="margin-top:10px;display:none;">Remove Uploaded Video</button>
+                </div>
+                <div class="form-group">
+                    <label for="video-url">External Video URL (optional)</label>
+                    <input type="text" id="video-url" placeholder="https://youtube.com/...">
+                    <div class="info-text">Use this if the lecture is hosted on YouTube/Vimeo/CDN.</div>
+                </div>
+                <div class="form-group">
+                    <label for="video-transcript">Video Transcript</label>
+                    <textarea id="video-transcript" rows="3"></textarea>
+                </div>
+                <div id="save-message"></div>
             </div>
-        </div>
-        
-        <div class="preview-pane">
-            <div class="pane-header">
-                <span>Live Preview</span>
-                <button class="btn btn-secondary" id="refresh-preview">Refresh</button>
-            </div>
-            <div id="preview"></div>
         </div>
     </div>
-    
-    <!-- KaTeX -->
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    
-    <!-- jsPDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- html2canvas for PDF export of preview -->
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    
-    <!-- JSXGraph -->
-    <script src="https://cdn.jsdelivr.net/npm/jsxgraph@1.7.0/distrib/jsxgraphcore.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsxgraph@1.7.0/distrib/jsxgraph.css">
-    
-    <!-- Monaco Editor -->
-    <script>var require = { paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } };</script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.nls.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
-    
-    <script src="admin-lectures-full-script.js"></script>
+
+    <div class="preview-pane">
+        <div class="pane-header">
+            <span>Lecture Preview</span>
+            <button class="btn btn-secondary" id="refresh-preview">Refresh</button>
+        </div>
+        <div id="preview"></div>
+    </div>
+</div>
+
+<!-- KaTeX -->
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<!-- jsPDF + html2canvas for exports -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<!-- JSXGraph -->
+<script src="https://cdn.jsdelivr.net/npm/jsxgraph@1.7.0/distrib/jsxgraphcore.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsxgraph@1.7.0/distrib/jsxgraph.css">
+
+<!-- Monaco -->
+<script>var require = { paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } };</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.nls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
+
+<script src="admin-lectures-script.js"></script>
 </body>
 </html>
