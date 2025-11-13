@@ -412,6 +412,7 @@
                 <button class="tab" data-tab="hint-editor">Hint</button>
                 <button class="tab" data-tab="tikz-visual">TikZ Visual</button>
                 <button class="tab" data-tab="jsxgraph">Graph Plotter</button>
+                <button class="tab" data-tab="task-settings">Task Settings</button>
             </div>
             
             <!-- LaTeX Editor with Monaco - Description -->
@@ -494,71 +495,77 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Task Settings -->
+            <div id="task-settings" class="editor-content">
+                <div style="padding:20px;overflow-y:auto;height:100%;">
+                    <h2 style="margin-bottom:20px;font-size:18px;color:#ffffff;">Task Settings</h2>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Title *</label>
+                        <input type="text" id="task-title" placeholder="Task title" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                    </div>
+                    <div style="display:flex;gap:15px;margin-bottom:15px;">
+                        <div style="flex:1;">
+                            <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Subject *</label>
+                            <select id="task-subject" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                                <option value="">Select subject</option>
+                                <option value="physics">Physics</option>
+                                <option value="math">Math</option>
+                                <option value="cs">Computer Science</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Type *</label>
+                            <select id="task-type" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                                <option value="">Select type</option>
+                                <option value="ege">ЕГЭ</option>
+                                <option value="olympiad">Olympiad</option>
+                                <option value="practice">Practice</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:15px;margin-bottom:15px;">
+                        <div style="flex:1;">
+                            <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Level *</label>
+                            <select id="task-level" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                                <option value="basic">Basic</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                                <option value="olympiad">Olympiad</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Points</label>
+                            <input type="number" id="task-points" value="10" min="1" max="100" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Status</label>
+                            <select id="task-status" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                                <option value="draft">Draft</option>
+                                <option value="active">Active</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Tags (comma-separated)</label>
+                        <input type="text" id="task-tags" placeholder="kinematics, ege-2024, projectile" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:13px;color:#ccc;display:block;margin-bottom:6px;font-weight:500;">Correct Answer (for auto-checking)</label>
+                        <input type="text" id="task-answer" placeholder="Enter correct answer" style="width:100%;padding:10px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:4px;font-size:13px;">
+                    </div>
+                    <div id="save-message" style="margin-top:15px;padding:12px;border-radius:4px;display:none;font-size:13px;"></div>
+                </div>
+            </div>
         </div>
         
         <div class="preview-pane">
             <div class="pane-header">
-                <span>Live Preview + Task Settings</span>
+                <span>Live Preview</span>
                 <button class="btn btn-secondary" id="refresh-preview">Refresh</button>
             </div>
-            <div style="padding:15px;background:#252526;border-bottom:1px solid #3e3e42;max-height:40vh;overflow-y:auto;">
-                <div style="margin-bottom:10px;">
-                    <label style="font-size:12px;color:#ccc;display:block;margin-bottom:4px;">Title *</label>
-                    <input type="text" id="task-title" placeholder="Task title" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:3px;">
-                </div>
-                <div style="display:flex;gap:10px;margin-bottom:10px;">
-                    <div style="flex:1;">
-                        <label style="font-size:12px;color:#ccc;display:block;margin-bottom:4px;">Subject *</label>
-                        <select id="task-subject" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:3px;">
-                            <option value="">Select</option>
-                            <option value="physics">Physics</option>
-                            <option value="math">Math</option>
-                            <option value="cs">CS</option>
-                        </select>
-                    </div>
-                    <div style="flex:1;">
-                        <label style="font-size:12px;color:#ccc;display:block;margin-bottom:4px;">Type *</label>
-                        <select id="task-type" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:3px;">
-                            <option value="">Select</option>
-                            <option value="ege">ЕГЭ</option>
-                            <option value="olympiad">Olympiad</option>
-                            <option value="practice">Practice</option>
-                        </select>
-                    </div>
-                </div>
-                <div style="display:flex;gap:10px;margin-bottom:10px;">
-                    <div style="flex:1;">
-                        <label style="font-size:12px;color:#ccc;display:block;margin-bottom:4px;">Level *</label>
-                        <select id="task-level" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:3px;">
-                            <option value="basic">Basic</option>
-                            <option value="intermediate">Intermediate</option>
-                            <option value="advanced">Advanced</option>
-                            <option value="olympiad">Olympiad</option>
-                        </select>
-                    </div>
-                    <div style="flex:1;">
-                        <label style="font-size:12px;color:#ccc;display:block;margin-bottom:4px;">Points</label>
-                        <input type="number" id="task-points" value="10" min="1" max="100" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:3px;">
-                    </div>
-                    <div style="flex:1;">
-                        <label style="font-size:12px;color:#ccc;display:block;margin-bottom:4px;">Status</label>
-                        <select id="task-status" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:3px;">
-                            <option value="draft">Draft</option>
-                            <option value="active">Active</option>
-                        </select>
-                    </div>
-                </div>
-                <div style="margin-bottom:10px;">
-                    <label style="font-size:12px;color:#ccc;display:block;margin-bottom:4px;">Tags (comma-separated)</label>
-                    <input type="text" id="task-tags" placeholder="kinematics, ege-2024, projectile" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:3px;">
-                </div>
-                <div style="margin-bottom:10px;">
-                    <label style="font-size:12px;color:#ccc;display:block;margin-bottom:4px;">Correct Answer (hidden)</label>
-                    <input type="text" id="task-answer" placeholder="For auto-checking" style="width:100%;padding:8px;background:#1e1e1e;color:#d4d4d4;border:1px solid #3e3e42;border-radius:3px;">
-                </div>
-                <div id="save-message" style="margin-top:10px;padding:10px;border-radius:4px;display:none;"></div>
-            </div>
-            <div id="preview" style="flex:1;overflow-y:auto;padding:20px;"></div>
+            <div id="preview"></div>
         </div>
     </div>
     
