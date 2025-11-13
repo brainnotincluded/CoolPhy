@@ -135,6 +135,30 @@ func ListLectures() gin.HandlerFunc {
 	}
 }
 
+// GetLecture godoc
+// @Summary      Get lecture by ID
+// @Tags         lectures
+// @Produce      json
+// @Param        id   path      int  true  "Lecture ID"
+// @Success      200  {object}  models.Lecture
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /lectures/{id} [get]
+func GetLecture() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var item models.Lecture
+		if err := db.Get().First(&item, id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "lecture not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, item)
+	}
+}
+
 // ListTasks godoc
 // @Summary      List tasks
 // @Tags         tasks
@@ -152,6 +176,30 @@ func ListTasks() gin.HandlerFunc {
 	}
 }
 
+// GetTask godoc
+// @Summary      Get task by ID
+// @Tags         tasks
+// @Produce      json
+// @Param        id   path      int  true  "Task ID"
+// @Success      200  {object}  models.Task
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /tasks/{id} [get]
+func GetTask() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var item models.Task
+		if err := db.Get().First(&item, id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, item)
+	}
+}
+
 // ListTopics godoc
 // @Summary      List topics
 // @Tags         topics
@@ -166,6 +214,30 @@ func ListTopics() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, items)
+	}
+}
+
+// GetTopic godoc
+// @Summary      Get topic by ID
+// @Tags         topics
+// @Produce      json
+// @Param        id   path      int  true  "Topic ID"
+// @Success      200  {object}  models.Topic
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /topics/{id} [get]
+func GetTopic() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var item models.Topic
+		if err := db.Get().Preload("Children").First(&item, id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "topic not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, item)
 	}
 }
 
@@ -193,6 +265,60 @@ func CreateLecture() gin.HandlerFunc {
 	}
 }
 
+// UpdateLecture godoc
+// @Summary      Update lecture
+// @Tags         admin
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id       path      int             true  "Lecture ID"
+// @Param        lecture  body      models.Lecture  true  "Lecture"
+// @Success      200      {object}  models.Lecture
+// @Router       /lectures/{id} [put]
+func UpdateLecture() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var existing models.Lecture
+		if err := db.Get().First(&existing, id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "lecture not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		var in models.Lecture
+		if err := c.ShouldBindJSON(&in); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		in.ID = existing.ID
+		if err := db.Get().Model(&existing).Updates(&in).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
+			return
+		}
+		c.JSON(http.StatusOK, in)
+	}
+}
+
+// DeleteLecture godoc
+// @Summary      Delete lecture
+// @Tags         admin
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Lecture ID"
+// @Success      204
+// @Router       /lectures/{id} [delete]
+func DeleteLecture() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		if err := db.Get().Delete(&models.Lecture{}, id).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "delete failed"})
+			return
+		}
+		c.Status(http.StatusNoContent)
+	}
+}
+
 // CreateTask godoc
 // @Summary      Create task
 // @Tags         admin
@@ -217,6 +343,60 @@ func CreateTask() gin.HandlerFunc {
 	}
 }
 
+// UpdateTask godoc
+// @Summary      Update task
+// @Tags         admin
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int          true  "Task ID"
+// @Param        task  body      models.Task  true  "Task"
+// @Success      200   {object}  models.Task
+// @Router       /tasks/{id} [put]
+func UpdateTask() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var existing models.Task
+		if err := db.Get().First(&existing, id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		var in models.Task
+		if err := c.ShouldBindJSON(&in); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		in.ID = existing.ID
+		if err := db.Get().Model(&existing).Updates(&in).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
+			return
+		}
+		c.JSON(http.StatusOK, in)
+	}
+}
+
+// DeleteTask godoc
+// @Summary      Delete task
+// @Tags         admin
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Task ID"
+// @Success      204
+// @Router       /tasks/{id} [delete]
+func DeleteTask() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		if err := db.Get().Delete(&models.Task{}, id).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "delete failed"})
+			return
+		}
+		c.Status(http.StatusNoContent)
+	}
+}
+
 // CreateTopic godoc
 // @Summary      Create topic
 // @Tags         admin
@@ -238,5 +418,59 @@ func CreateTopic() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusCreated, in)
+	}
+}
+
+// UpdateTopic godoc
+// @Summary      Update topic
+// @Tags         admin
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id     path      int           true  "Topic ID"
+// @Param        topic  body      models.Topic  true  "Topic"
+// @Success      200    {object}  models.Topic
+// @Router       /topics/{id} [put]
+func UpdateTopic() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		var existing models.Topic
+		if err := db.Get().First(&existing, id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "topic not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		var in models.Topic
+		if err := c.ShouldBindJSON(&in); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		in.ID = existing.ID
+		if err := db.Get().Model(&existing).Updates(&in).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
+			return
+		}
+		c.JSON(http.StatusOK, in)
+	}
+}
+
+// DeleteTopic godoc
+// @Summary      Delete topic
+// @Tags         admin
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Topic ID"
+// @Success      204
+// @Router       /topics/{id} [delete]
+func DeleteTopic() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		if err := db.Get().Delete(&models.Topic{}, id).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "delete failed"})
+			return
+		}
+		c.Status(http.StatusNoContent)
 	}
 }

@@ -26,8 +26,11 @@ func Register(r *gin.Engine, cfg config.Config) {
 		api.POST("/auth/login", handlers.LoginHandler(cfg))
 
 		api.GET("/lectures", handlers.ListLectures())
+		api.GET("/lectures/:id", handlers.GetLecture())
 		api.GET("/tasks", handlers.ListTasks())
+		api.GET("/tasks/:id", handlers.GetTask())
 		api.GET("/topics", handlers.ListTopics())
+		api.GET("/topics/:id", handlers.GetTopic())
 
 		// Protected routes
 		auth := api.Group("")
@@ -42,6 +45,13 @@ func Register(r *gin.Engine, cfg config.Config) {
 				admin.POST("/tasks", handlers.CreateTask())
 				admin.POST("/topics", handlers.CreateTopic())
 			}
+			// Admin update/delete (need auth + admin)
+			admin.PUT("/lectures/:id", handlers.UpdateLecture())
+			admin.DELETE("/lectures/:id", handlers.DeleteLecture())
+			admin.PUT("/tasks/:id", handlers.UpdateTask())
+			admin.DELETE("/tasks/:id", handlers.DeleteTask())
+			admin.PUT("/topics/:id", handlers.UpdateTopic())
+			admin.DELETE("/topics/:id", handlers.DeleteTopic())
 		}
 	}
 }
