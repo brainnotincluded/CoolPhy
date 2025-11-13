@@ -525,12 +525,12 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 
                 const tempDiv = document.createElement('div');
                 
-                // Handle TikZ pictures - embed script tags directly
+                // Handle TikZ pictures - replace with iframes that run TikZJax inside
                 const tikzMatches = [];
                 content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, (match) => {
                     const id = 'tikz-' + Date.now() + '-' + tikzMatches.length;
                     tikzMatches.push({ id, code: match });
-                    return `<div id="${id}" style="background: white; padding: 20px; margin: 10px 0; border-radius: 4px;"></div>`;
+                    return `<div id=\"${id}\" class=\"tikz-frame\" style=\"margin: 10px 0;\"></div>`;
                 });
                 
                 tempDiv.innerHTML = content;
@@ -547,31 +547,40 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     throwOnError: false
                 });
                 
-                // Process TikZ diagrams with TikZJax
-                if (tikzMatches.length > 0) {
-                    console.log('Processing', tikzMatches.length, 'TikZ diagrams');
-                    tikzMatches.forEach(({ id, code }) => {
-                        const container = document.getElementById(id);
-                        if (container) {
-                            // Create script element for TikZJax
-                            const script = document.createElement('script');
-                            script.type = 'text/tikz';
-                            script.textContent = code;
-                            container.appendChild(script);
-                            console.log('Added TikZ script to', id);
-                        }
-                    });
-                    
-                    // Force TikZJax to process the new script tags
-                    // TikZJax listens for DOM changes, so trigger a mutation
-                    setTimeout(() => {
-                        // Force a DOM update event
-                        const event = new Event('DOMContentLoaded', { bubbles: true, cancelable: true });
-                        document.dispatchEvent(event);
-                    }, 100);
-                }
-            } catch (error) {
-                const errorDiv = document.createElement('div');
+                // Insert iframes for TikZ diagrams
+                tikzMatches.forEach(({ id, code }) => {
+                    const container = document.getElementById(id);
+                    if (!container) return;
+                    const iframe = document.createElement('iframe');
+                    iframe.style.width = '100%';
+                    iframe.style.border = '0';
+                    iframe.loading = 'lazy';
+                    // Build srcdoc with TikZJax
+                    const html = `<!DOCTYPE html><html><head>
+<meta charset=\"utf-8\">
+<link rel=\"stylesheet\" href=\"https://tikzjax.com/v1/fonts.css\">
+<script defer src=\"https://tikzjax.com/v1/tikzjax.js\"></script>
+<style>html,body{margin:0;padding:0;background:#fff}</style>
+</head><body>
+<script type=\"text/tikz\">${code.replace(/<\//g,'<\\/')}</script>
+</body></html>`;
+                    iframe.srcdoc = html;
+                    // Auto resize when content is ready
+                    iframe.onload = () => {
+                        const adjust = () => {
+                            try {
+                                const doc = iframe.contentDocument;
+                                const h = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight, 150);
+                                iframe.style.height = h + 'px';
+                            } catch (e) {}
+                        };
+                        adjust();
+                        const interval = setInterval(adjust, 300);
+                        setTimeout(() => clearInterval(interval), 5000);
+                    };
+                    container.innerHTML = '';
+                    container.appendChild(iframe);
+                });
                 errorDiv.className = 'error';
                 errorDiv.textContent = 'Error: ' + error.message;
                 preview.appendChild(errorDiv);
