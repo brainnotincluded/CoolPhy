@@ -603,64 +603,48 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 // Compute offsets against the raw content before any replacements
                 const raw = content;
                 const contentStartOffset = code.indexOf(raw);
-                // Strip preview meta comments from rendered content (but offsets computed from raw remain correct)
-                content = raw.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
                 
-                // First, wrap math tokens based on raw positions to keep mapping stable
-                const wrapTokensFrom = (src, regexes) => {
-                    // Collect tokens without overlap
-                    let tokens = [];
-                    const covered = (s,e)=>tokens.some(t=>!(e<=t.start||s>=t.end));
-                    for (const {re, adjust} of regexes) {
-                        const matches = [...src.matchAll(re)];
-                        for (const m of matches) {
-                            let s = m.index, e = m.index + m[0].length;
-                            if (adjust) { const adj = adjust(m); s = adj.start; e = adj.end; }
-                            if (!covered(s,e)) tokens.push({start:s,end:e});
-                        }
-                    }
-                    tokens.sort((a,b)=>a.start-b.start);
-                    // Build html with spans at those ranges
-                    let out = '', pos = 0;
-                    for (const t of tokens) {
-                        out += src.slice(pos, t.start);
-                        const frag = src.slice(t.start, t.end);
-                        out += `<span class=\"src\" data-start=\"${contentStartOffset+t.start}\" data-end=\"${contentStartOffset+t.end}\">${frag}</span>`;
-                        pos = t.end;
-                    }
-                    out += src.slice(pos);
-                    content = out;
-                };
-                wrapTokensFrom(raw, [
+                // Store math token positions for later hover mapping (after KaTeX renders)
+                const mathTokens = [];
+                const regexes = [
                     {re: /\$\$([\s\S]*?)\$\$/g},
                     {re: /\\\[([\s\S]*?)\\\]/g},
                     {re: /\\\(([\s\S]*?)\\\)/g},
                     {re: /(^|[^$])\$([^$\n]+?)\$(?!\$)/g, adjust: (m)=>({start:m.index+(m[1]?m[1].length:0), end:m.index+m[0].length})}
-                ]);
+                ];
+                for (const {re, adjust} of regexes) {
+                    const matches = [...raw.matchAll(re)];
+                    for (const m of matches) {
+                        let s = m.index, e = m.index + m[0].length;
+                        if (adjust) { const adj = adjust(m); s = adj.start; e = adj.end; }
+                        mathTokens.push({start: contentStartOffset + s, end: contentStartOffset + e, text: raw.slice(s, e)});
+                    }
+                }
                 
-                // Wrap sections/macros from raw (for offset tracking) but process current content
-                const wrapMacros = (src, currentContent, macroMap) => {
+                // Strip preview meta comments from rendered content
+                content = raw.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
+                
+                // Wrap sections/macros with proper HTML tags
+                const wrapMacros = (src, macroMap) => {
                     let all = [];
                     for (const [macro, tag] of macroMap) {
                         const matches = [...src.matchAll(new RegExp(`\\\\${macro}\\{([^}]+)\\}`, 'g'))];
                         for (const m of matches) {
-                            all.push({start:m.index, end:m.index+m[0].length, tag, inner:m[1]});
+                            all.push({start:m.index, end:m.index+m[0].length, tag, inner:m[1], fullMatch:m[0]});
                         }
                     }
                     all.sort((a,b)=>a.start-b.start);
                     let out = '', pos = 0;
                     for (const t of all) {
-                        out += currentContent.slice(pos, t.start);
-                        out += `<${t.tag} class=\"src\" data-start=\"${contentStartOffset+t.start}\" data-end=\"${contentStartOffset+t.end}\">${t.inner}</${t.tag}>`;
+                        out += content.slice(pos, t.start);
+                        const offset = contentStartOffset + raw.indexOf(t.fullMatch);
+                        out += `<${t.tag} class=\"src\" data-start=\"${offset}\" data-end=\"${offset + t.fullMatch.length}\">${t.inner}</${t.tag}>`;
                         pos = t.end;
                     }
-                    out += currentContent.slice(pos);
+                    out += content.slice(pos);
                     return out;
                 };
-                content = wrapMacros(raw, content, [['section','h2'], ['subsection','h3'], ['textbf','strong'], ['textit','em']]);
-                
-                // Strip preview meta from final HTML only (offsets computed from raw)
-                content = content.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
+                content = wrapMacros(raw, [['section','h2'], ['subsection','h3'], ['textbf','strong'], ['textit','em']]);
                 
                 const tempDiv = document.createElement('div');
                 
@@ -717,6 +701,18 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                         {left: '\\(', right: '\\)', display: false}
                     ],
                     throwOnError: false
+                });
+                
+                // After KaTeX renders, add hover attributes to math elements
+                const katexElements = preview.querySelectorAll('.katex');
+                let mathIdx = 0;
+                katexElements.forEach(el => {
+                    if (mathIdx < mathTokens.length) {
+                        const token = mathTokens[mathIdx++];
+                        el.classList.add('src');
+                        el.dataset.start = token.start;
+                        el.dataset.end = token.end;
+                    }
                 });
                 
                 // Insert iframes for TikZ diagrams
