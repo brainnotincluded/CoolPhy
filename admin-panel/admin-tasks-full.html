@@ -151,13 +151,22 @@
             min-width: 0;
         }
         
+        /* Preview content should use as much visible space as possible, but not overflow */
         #preview img,
-        #preview svg,
-        #preview iframe {
-            max-width: 100%;
+        #preview svg {
+            width: 100%;           /* always fill preview width */
             height: auto;
+            max-height: calc(100vh - 160px); /* keep fully visible on common screens */
+            object-fit: contain;
             display: block;
             margin: 10px auto;
+        }
+        #preview iframe {
+            width: 100%;
+            max-height: calc(100vh - 160px);
+            display: block;
+            margin: 10px auto;
+            border: none;
         }
         
         .pane-header {
