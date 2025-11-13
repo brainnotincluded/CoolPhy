@@ -606,6 +606,7 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 content = raw.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
                 
                 // First, wrap math tokens based on raw positions to keep mapping stable
+                const inlineRe = /(^|[^$])\$([^$\n]+?)\$(?!\$)/g;
                 const wrapTokensFrom = (src, regexes) => {
                     // Collect tokens without overlap
                     let tokens = [];
@@ -613,8 +614,7 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     for (const re of regexes) {
                         for (const m of src.matchAll(re)) {
                             let s = m.index, e = m.index + m[0].length;
-                            // Special case for inline $: group 1 may be leading char
-                            if (re === /(^|[^$])\$([^$\n]+?)\$(?!\$)/g) { s += (m[1] ? 1 : 0); }
+                            if (re === inlineRe) { s += (m[1] ? 1 : 0); }
                             if (!covered(s,e)) tokens.push({start:s,end:e});
                         }
                     }
@@ -630,7 +630,9 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                     out += content.slice(pos);
                     content = out;
                 };
-                wrapTokensFrom(raw, [/\$\$([\s\S]*?)\$\$/g, /\\\[([\s\S]*?)\\\]/g, /\\\(([\s\S]*?)\\\)/g, /(^|[^$])\$([^$\n]+?)\$(?!\$)/g]);
+                wrapTokensFrom(raw, [/\$\$([\s\S]*?)\$\$/g, /\\\[([\s\S]*?)\\\]/g, /\\\(([\s\S]*?)\\\)/g, inlineRe]);
+                // Strip preview meta from final HTML only (offsets computed from raw)
+                content = content.replace(/^%\s*tikz-(?:preview|layout).*$/gm, '');
                 
                 // Then replace simple text macros to HTML headings (mapping approximate)
                 content = content.replace(/\\section\{([^}]+)\}/g, (m, t, offset) => `<h2 class=\"src\" data-start=\"${contentStartOffset+offset}\" data-end=\"${contentStartOffset+offset+m.length}\">${t}</h2>`)
@@ -646,12 +648,12 @@ $$\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}$$
                 const preTikz = [...raw.matchAll(/\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/g)].map(m=>({code:m[0],start:contentStartOffset+m.index,end:contentStartOffset+m.index+m[0].length}));
                 let tikzIdx = 0;
                 const tikzMatches = [];
-                content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, (match) => {
+                content = content.replace(/(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g, (match, _g1, offset) => {
                     const id = 'tikz-' + hashCode(match);
                     // Parse previous line for meta like: % tikz-preview: width=50%, align=center
                     // Find the previous line from the current content (OK for reading meta)
                     const current = content;
-                    const before = current.slice(0, current.indexOf(match));
+                    const before = current.slice(0, offset);
                     const lineStart = before.lastIndexOf('\n') + 1;
                     const prevLine = before.slice(lineStart).trim();
                     let meta = {};
