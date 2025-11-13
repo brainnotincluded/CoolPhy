@@ -151,13 +151,15 @@
             min-width: 0;
         }
         
-        /* Images: fixed thumbnail size that does not eat the whole line */
+        /* Images: fixed thumbnail size; content centered with 5px inner margin */
         #preview img {
-            width: 250px !important;
+            width: 250px !important;           /* total box size */
             height: 250px !important;
-            object-fit: contain;
+            padding: 5px;                      /* inner margin around content */
+            box-sizing: border-box;
+            object-fit: contain;               /* scale to max fit inside 240x240 area */
             display: inline-block;
-            margin: 6px;
+            margin: 5px;                       /* space between thumbnails */
             vertical-align: middle;
         }
         
@@ -230,10 +232,10 @@
         .tikz-card-ctrl input, .tikz-card-ctrl select {
             background: #3e3e42; color: #ccc; border: 1px solid #555; border-radius: 3px; padding: 2px 4px;
         }
-        .tikz-card {
+.tikz-card {
             display: inline-block;
             vertical-align: top;
-            margin: 8px;
+            margin: 5px; /* match image thumbnails */
             background: transparent;
             width: 250px !important; /* fixed thumbnail width so it doesn't eat full line */
         }
@@ -241,6 +243,7 @@
         .tikz-frame {
             width: 250px !important;
             height: 250px !important;
+            overflow: hidden;
         }
         .tikz-frame iframe {
             width: 100% !important;
@@ -897,7 +900,7 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
                                   '<meta charset="utf-8">' +
                                   '<link rel="stylesheet" href="https://tikzjax.com/v1/fonts.css">' +
                                   '<script defer src="https://tikzjax.com/v1/tikzjax.js"><\/script>' +
-                                  '<style>html,body{margin:0;padding:0;background:#fff}</style>' +
+                                  '<style>html,body{margin:0;padding:0;height:100%;background:#fff;display:flex;align-items:center;justify-content:center;}svg{max-width:240px;max-height:240px;margin:5px;}</style>' +
                                   '</head><body>' +
                                   '<script type="text/tikz">' + escaped + '<\/script>' +
                                   '</body></html>';
