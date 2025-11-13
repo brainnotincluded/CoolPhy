@@ -24,6 +24,16 @@ type loginPayload struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// RegisterHandler godoc
+// @Summary      Register a new user
+// @Description  Create a user and return JWT token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      registerPayload  true  "Register payload"
+// @Success      201      {object}  map[string]interface{}
+// @Failure      400      {object}  map[string]interface{}
+// @Router       /auth/register [post]
 func RegisterHandler(cfg config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var p registerPayload
@@ -50,6 +60,16 @@ func RegisterHandler(cfg config.Config) gin.HandlerFunc {
 	}
 }
 
+// LoginHandler godoc
+// @Summary      Login
+// @Description  Returns JWT token for valid credentials
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      loginPayload  true  "Login payload"
+// @Success      200      {object}  map[string]interface{}
+// @Failure      401      {object}  map[string]interface{}
+// @Router       /auth/login [post]
 func LoginHandler(cfg config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var p loginPayload
@@ -79,6 +99,13 @@ func LoginHandler(cfg config.Config) gin.HandlerFunc {
 	}
 }
 
+// Profile godoc
+// @Summary      Get profile
+// @Tags         profile
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /profile [get]
 func Profile() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uid, _ := c.Get("userID")
@@ -91,7 +118,12 @@ func Profile() gin.HandlerFunc {
 	}
 }
 
-// List endpoints
+// ListLectures godoc
+// @Summary      List lectures
+// @Tags         lectures
+// @Produce      json
+// @Success      200  {array}   models.Lecture
+// @Router       /lectures [get]
 func ListLectures() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var items []models.Lecture
@@ -103,6 +135,12 @@ func ListLectures() gin.HandlerFunc {
 	}
 }
 
+// ListTasks godoc
+// @Summary      List tasks
+// @Tags         tasks
+// @Produce      json
+// @Success      200  {array}   models.Task
+// @Router       /tasks [get]
 func ListTasks() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var items []models.Task
@@ -114,6 +152,12 @@ func ListTasks() gin.HandlerFunc {
 	}
 }
 
+// ListTopics godoc
+// @Summary      List topics
+// @Tags         topics
+// @Produce      json
+// @Success      200  {array}   models.Topic
+// @Router       /topics [get]
 func ListTopics() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var items []models.Topic
@@ -125,7 +169,15 @@ func ListTopics() gin.HandlerFunc {
 	}
 }
 
-// Admin create endpoints (simplified)
+// CreateLecture godoc
+// @Summary      Create lecture
+// @Tags         admin
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        lecture  body      models.Lecture  true  "Lecture"
+// @Success      201      {object}  models.Lecture
+// @Router       /admin/lectures [post]
 func CreateLecture() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var in models.Lecture
@@ -141,6 +193,15 @@ func CreateLecture() gin.HandlerFunc {
 	}
 }
 
+// CreateTask godoc
+// @Summary      Create task
+// @Tags         admin
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        task  body      models.Task  true  "Task"
+// @Success      201   {object}  models.Task
+// @Router       /admin/tasks [post]
 func CreateTask() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var in models.Task
@@ -156,6 +217,15 @@ func CreateTask() gin.HandlerFunc {
 	}
 }
 
+// CreateTopic godoc
+// @Summary      Create topic
+// @Tags         admin
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        topic  body      models.Topic  true  "Topic"
+// @Success      201    {object}  models.Topic
+// @Router       /admin/topics [post]
 func CreateTopic() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var in models.Topic
