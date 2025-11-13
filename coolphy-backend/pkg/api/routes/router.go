@@ -51,6 +51,12 @@ func Register(r *gin.Engine, cfg config.Config) {
 			// Notifications
 			auth.GET("/notifications", handlers.ListNotifications())
 			auth.PUT("/notifications/:id/read", handlers.MarkNotificationRead())
+			// Professor Chat
+			auth.POST("/professor-chat", handlers.ProfessorChat())
+			auth.GET("/professor-chat/history", handlers.ChatHistory())
+			auth.GET("/professor-chat/:id", handlers.GetChatMessage())
+			// Achievements
+			auth.GET("/achievements", handlers.Achievements())
 			// Admin
 			admin := auth.Group("/admin")
 			admin.Use(middleware.RBAC("admin"))
@@ -72,5 +78,7 @@ func Register(r *gin.Engine, cfg config.Config) {
 				admin.DELETE("/users/:id", handlers.DeleteUser())
 			}
 		}
+		// Leaderboard (public)
+		api.GET("/leaderboard", handlers.Leaderboard())
 	}
 }

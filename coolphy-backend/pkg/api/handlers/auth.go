@@ -903,3 +903,140 @@ func MarkNotificationRead() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"message": "marked as read"})
 	}
 }
+
+// AI Professor Chat
+
+type chatPayload struct {
+	Message     string `json:"message" binding:"required"`
+	ContextType string `json:"context_type"` // lecture, task, topic, general
+	ContextID   *uint  `json:"context_id"`
+}
+
+// ProfessorChat godoc
+// @Summary      Ask AI professor
+// @Description  Submit question to AI professor (placeholder - integrate LLM later)
+// @Tags         professor
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      chatPayload  true  "Question"
+// @Success      201      {object}  models.ChatMessage
+// @Router       /professor-chat [post]
+func ProfessorChat() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var p chatPayload
+		if err := c.ShouldBindJSON(&p); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		// TODO: Integrate with LLM API (OpenAI/Anthropic/local)
+		aiReply := "AI response placeholder - integrate LLM here"
+		msg := models.ChatMessage{
+			UserID:      userID.(uint),
+			ContextType: p.ContextType,
+			ContextID:   p.ContextID,
+			UserMessage: p.Message,
+			AIReply:     aiReply,
+		}
+		if err := db.Get().Create(&msg).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "create failed"})
+			return
+		}
+		c.JSON(http.StatusCreated, msg)
+	}
+}
+
+// ChatHistory godoc
+// @Summary      Get chat history
+// @Tags         professor
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.ChatMessage
+// @Router       /professor-chat/history [get]
+func ChatHistory() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var messages []models.ChatMessage
+		if err := db.Get().Where("user_id = ?", userID).Order("timestamp desc").Limit(50).Find(&messages).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, messages)
+	}
+}
+
+// GetChatMessage godoc
+// @Summary      Get specific chat message
+// @Tags         professor
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path      int  true  "Chat message ID"
+// @Success      200  {object}  models.ChatMessage
+// @Router       /professor-chat/{id} [get]
+func GetChatMessage() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		userID, _ := c.Get("userID")
+		var msg models.ChatMessage
+		if err := db.Get().Where("id = ? AND user_id = ?", id, userID).First(&msg).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "message not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		c.JSON(http.StatusOK, msg)
+	}
+}
+
+// Leaderboard & Achievements
+
+// Leaderboard godoc
+// @Summary      Get leaderboard
+// @Tags         leaderboard
+// @Produce      json
+// @Success      200  {array}   map[string]interface{}
+// @Router       /leaderboard [get]
+func Leaderboard() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var users []models.User
+		if err := db.Get().Select("id, name, points").Order("points desc").Limit(100).Find(&users).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+			return
+		}
+		leaderboard := make([]map[string]interface{}, len(users))
+		for i, u := range users {
+			leaderboard[i] = map[string]interface{}{
+				"rank":   i + 1,
+				"id":     u.ID,
+				"name":   u.Name,
+				"points": u.Points,
+			}
+		}
+		c.JSON(http.StatusOK, leaderboard)
+	}
+}
+
+// Achievements godoc
+// @Summary      Get user achievements
+// @Tags         achievements
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /achievements [get]
+func Achievements() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, _ := c.Get("userID")
+		var u models.User
+		if err := db.Get().First(&u, userID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"achievements": u.Achievements,
+			"points":       u.Points,
+		})
+	}
+}
