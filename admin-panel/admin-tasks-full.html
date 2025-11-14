@@ -1655,17 +1655,19 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         
         document.getElementById('refresh-preview').addEventListener('click', renderLatex);
         
-        // Style presets and fonts
+        // Style presets and fonts (optional; only if controls exist)
         const fontSelect = document.getElementById('font-select');
         const presetSelect = document.getElementById('style-preset');
         const applyFont = (f) => { document.body.style.fontFamily = f; };
-        fontSelect.addEventListener('change', ()=> applyFont(fontSelect.value));
-        presetSelect.addEventListener('change', ()=> {
-            if (presetSelect.value === 'clean') applyFont('Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif');
-            if (presetSelect.value === 'teacher') applyFont("'Source Serif Pro', Georgia, serif");
-            if (presetSelect.value === 'hand') applyFont("Kalam, 'Comic Neue', cursive");
-        });
-        applyFont(fontSelect.value);
+        if (fontSelect && presetSelect) {
+            fontSelect.addEventListener('change', ()=> applyFont(fontSelect.value));
+            presetSelect.addEventListener('change', ()=> {
+                if (presetSelect.value === 'clean') applyFont('Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif');
+                if (presetSelect.value === 'teacher') applyFont("'Source Serif Pro', Georgia, serif");
+                if (presetSelect.value === 'hand') applyFont("Kalam, 'Comic Neue', cursive");
+            });
+            applyFont(fontSelect.value);
+        }
         
         // Initial canvas render
         renderTikzCanvas();
@@ -1693,26 +1695,29 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
         // Save Task
         document.getElementById('save-task-btn').addEventListener('click', async () => {
             const token = getToken();
+            const saveBtn = document.getElementById('save-task-btn');
+            const msg = document.getElementById('save-message');
+
             if (!token) {
-                const msg = document.getElementById('save-message');
                 msg.style.display = 'block';
                 msg.style.background = '#5a1d1d';
                 msg.style.color = '#f48771';
                 msg.textContent = 'Please login first (click Login in header)';
                 return;
             }
+
             const title = document.getElementById('task-title').value.trim();
             const subject = document.getElementById('task-subject').value;
             const type = document.getElementById('task-type').value;
             const level = document.getElementById('task-level').value;
             if (!title || !subject || !type) {
-                const msg = document.getElementById('save-message');
                 msg.style.display = 'block';
                 msg.style.background = '#5a1d1d';
                 msg.style.color = '#f48771';
                 msg.textContent = 'Please fill required fields: Title, Subject, Type';
                 return;
             }
+
             const tags = document.getElementById('task-tags').value.split(',').map(t=>t.trim()).filter(t=>t);
             const data = {
                 title,
@@ -1727,30 +1732,39 @@ $$L = \\frac{v_0^2 \\sin 2\\alpha}{g} = \\frac{400 \\cdot \\sin 90°}{10} = 40 \
                 points: parseInt(document.getElementById('task-points').value),
                 status: document.getElementById('task-status').value
             };
+
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
+            saveBtn.style.opacity = '0.7';
+
             try {
-                const res = await fetch('http://178.255.127.62/api/v1/admin/tasks', {
+                const res = await fetch('http://178.255.127.62:8081/api/v1/admin/tasks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                     body: JSON.stringify(data)
                 });
                 const result = await res.json();
-                const msg = document.getElementById('save-message');
                 msg.style.display = 'block';
                 if (res.ok) {
                     msg.style.background = '#107c10';
                     msg.style.color = '#fff';
                     msg.textContent = 'Task created successfully! ID: ' + (result.id || 'N/A');
+                    alert('✅ Task saved successfully! ID: ' + (result.id || 'N/A'));
                 } else {
                     msg.style.background = '#5a1d1d';
                     msg.style.color = '#f48771';
                     msg.textContent = 'Error: ' + (result.error || 'Failed to create task');
                 }
             } catch (e) {
-                const msg = document.getElementById('save-message');
                 msg.style.display = 'block';
                 msg.style.background = '#5a1d1d';
                 msg.style.color = '#f48771';
                 msg.textContent = 'Network error: ' + e.message;
+            } finally {
+                saveBtn.textContent = originalText;
+                saveBtn.disabled = false;
+                saveBtn.style.opacity = '1';
             }
         });
     </script>

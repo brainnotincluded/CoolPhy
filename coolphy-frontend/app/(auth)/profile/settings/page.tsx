@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subjects, setSubjects] = useState<string[]>([]);
+  const [language, setLanguage] = useState<'en' | 'ru' | 'zh'>('en');
   
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -32,7 +33,13 @@ export default function SettingsPage() {
         setUser(data);
         setName(data.name);
         setEmail(data.email);
-        setSubjects(data.subjects);
+        setSubjects(data.subjects || []);
+        const langFromSettings = (data.settings && (data.settings as any).language) as
+          | 'en'
+          | 'ru'
+          | 'zh'
+          | undefined;
+        setLanguage(langFromSettings || 'en');
       } catch (error) {
         console.error('Failed to fetch profile:', error);
       } finally {
@@ -46,7 +53,15 @@ export default function SettingsPage() {
   const handleUpdateProfile = async () => {
     setSaving(true);
     try {
-      await authApi.updateProfile({ name, email, subjects });
+      await authApi.updateProfile({
+        name,
+        email,
+        subjects,
+        settings: {
+          ...(user?.settings || {}),
+          language,
+        },
+      });
       alert('Profile updated successfully!');
     } catch (error) {
       console.error('Failed to update profile:', error);
@@ -152,6 +167,32 @@ export default function SettingsPage() {
               >
                 CS
               </Badge>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Language</label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={language === 'en' ? 'default' : 'outline'}
+                onClick={() => setLanguage('en')}
+              >
+                English
+              </Button>
+              <Button
+                type="button"
+                variant={language === 'ru' ? 'default' : 'outline'}
+                onClick={() => setLanguage('ru')}
+              >
+                Русский
+              </Button>
+              <Button
+                type="button"
+                variant={language === 'zh' ? 'default' : 'outline'}
+                onClick={() => setLanguage('zh')}
+              >
+                中文
+              </Button>
             </div>
           </div>
           <Button onClick={handleUpdateProfile} disabled={saving}>

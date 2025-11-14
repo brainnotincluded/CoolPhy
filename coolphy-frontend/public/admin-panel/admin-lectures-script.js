@@ -1057,7 +1057,7 @@ videoFileInput.addEventListener('change', async (e) => {
     formData.append('video', file);
 
     try {
-        const response = await fetch('http://178.255.127.62/api/v1/admin/videos', {
+        const response = await fetch('http://178.255.127.62:8081/api/v1/admin/videos', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -1104,8 +1104,10 @@ clearVideoBtn.addEventListener('click', () => {
 // Save Lecture
 document.getElementById('save-lecture-btn').addEventListener('click', async () => {
     const token = getToken();
+    const saveBtn = document.getElementById('save-lecture-btn');
+    const msg = document.getElementById('save-message');
+
     if (!token) {
-        const msg = document.getElementById('save-message');
         msg.style.display = 'block';
         msg.style.background = '#5a1d1d';
         msg.style.color = '#f48771';
@@ -1116,7 +1118,6 @@ document.getElementById('save-lecture-btn').addEventListener('click', async () =
     const subject = document.getElementById('lecture-subject').value;
     const level = document.getElementById('lecture-level').value;
     if (!title || !subject) {
-        const msg = document.getElementById('save-message');
         msg.style.display = 'block';
         msg.style.background = '#5a1d1d';
         msg.style.color = '#f48771';
@@ -1136,29 +1137,38 @@ document.getElementById('save-lecture-btn').addEventListener('click', async () =
         video_transcript: document.getElementById('video-transcript').value,
         video_asset_id: uploadedVideoAssetId
     };
+
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Saving...';
+    saveBtn.disabled = true;
+    saveBtn.style.opacity = '0.7';
+
     try {
-        const res = await fetch('http://178.255.127.62/api/v1/admin/lectures', {
+        const res = await fetch('http://178.255.127.62:8081/api/v1/admin/lectures', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify(data)
         });
         const result = await res.json();
-        const msg = document.getElementById('save-message');
         msg.style.display = 'block';
         if (res.ok) {
             msg.style.background = '#107c10';
             msg.style.color = '#fff';
             msg.textContent = 'Lecture created successfully! ID: ' + (result.id || 'N/A');
+            alert('✅ Lecture saved successfully! ID: ' + (result.id || 'N/A'));
         } else {
             msg.style.background = '#5a1d1d';
             msg.style.color = '#f48771';
             msg.textContent = 'Error: ' + (result.error || 'Failed to create lecture');
         }
     } catch (e) {
-        const msg = document.getElementById('save-message');
         msg.style.display = 'block';
         msg.style.background = '#5a1d1d';
         msg.style.color = '#f48771';
         msg.textContent = 'Network error: ' + e.message;
+    } finally {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = '1';
     }
 });

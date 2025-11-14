@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Editor - CoolPhy</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #252526;
+            padding: 15px 20px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 { font-size: 20px; font-weight: 600; }
+        
+        .btn {
+            padding: 8px 16px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-left: 10px;
+        }
+        
+        .btn:hover { background: #1177bb; }
+        .btn-secondary { background: #3e3e42; }
+        .btn-secondary:hover { background: #505050; }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .editor-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #3e3e42;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #cccccc;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            background: #3c3c3c;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            color: #d4d4d4;
+            font-size: 14px;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #0e639c;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+            line-height: 1.5;
+        }
+        
+        .preview-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .preview-header {
+            padding: 10px 20px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        #preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #1e1e1e;
+        }
+        
+        .preview-card {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .preview-card h3 {
+            color: #4fc3f7;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .preview-card .content {
+            line-height: 1.6;
+        }
+        
+        .katex { font-size: 1.1em; }
+        
+        .status {
+            padding: 10px 20px;
+            background: #2d2d30;
+            border-top: 1px solid #3e3e42;
+            font-size: 12px;
+            color: #858585;
+        }
+        
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        
+        .section-title {
+            color: #81c784;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #3e3e42;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 Task Editor</h1>
+        <div>
+            <button class="btn btn-secondary" onclick="window.location.href='/admin.html'">← Back</button>
+            <button class="btn" onclick="saveTask()">💾 Save Task</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="editor-section">
+            <h2 class="section-title">📋 Task Information</h2>
+            
+            <div class="form-group">
+                <label>Title *</label>
+                <input type="text" id="title" placeholder="Task title" value="Calculate the Resultant Force">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label>Subject *</label>
+                    <select id="subject">
+                        <option value="physics">Physics</option>
+                        <option value="math">Math</option>
+                        <option value="cs">Computer Science</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Level *</label>
+                    <select id="level">
+                        <option value="basic" selected>Basic</option>
+                        <option value="advanced">Advanced</option>
+                        <option value="olympiad">Olympiad</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Type *</label>
+                    <select id="type">
+                        <option value="practice" selected>Practice</option>
+                        <option value="ege">EGE</option>
+                        <option value="olympiad">Olympiad</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label>Tags (comma-separated)</label>
+                    <input type="text" id="tags" placeholder="forces, vectors, mechanics" value="forces, vectors, Newton's laws">
+                </div>
+                <div class="form-group">
+                    <label>Points *</label>
+                    <input type="number" id="points" placeholder="10" value="15" min="1">
+                </div>
+            </div>
+            
+            <h2 class="section-title">❓ Problem Statement</h2>
+            
+            <div class="form-group">
+                <label>Description (LaTeX) *</label>
+                <textarea id="description" placeholder="Problem description with LaTeX..."></textarea>
+            </div>
+            
+            <h2 class="section-title">💡 Help & Solution</h2>
+            
+            <div class="form-group">
+                <label>Hint (LaTeX)</label>
+                <textarea id="hint" placeholder="Optional hint for students..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Solution (LaTeX) *</label>
+                <textarea id="solution" placeholder="Complete solution with steps..."></textarea>
+            </div>
+        </div>
+        
+        <div class="preview-section">
+            <div class="preview-header">Live Preview</div>
+            <div id="preview"></div>
+        </div>
+    </div>
+    
+    <div class="status" id="status">Ready</div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <script>
+        const API_BASE = 'http://178.255.127.62:8081/api/v1';
+        
+        // Default values
+        document.getElementById('description').value = `Two forces act on an object: $\\\\vec{F}_1 = 3\\\\hat{i} + 4\\\\hat{j}$ N and $\\\\vec{F}_2 = -1\\\\hat{i} + 2\\\\hat{j}$ N.
+
+Calculate the magnitude of the resultant force $\\\\vec{F}_R = \\\\vec{F}_1 + \\\\vec{F}_2$.`;
+
+        document.getElementById('hint').value = `Remember that vector addition is component-wise:
+
+$$\\\\vec{F}_R = (F_{1x} + F_{2x})\\\\hat{i} + (F_{1y} + F_{2y})\\\\hat{j}$$
+
+The magnitude is: $|\\\\vec{F}_R| = \\\\sqrt{F_{Rx}^2 + F_{Ry}^2}$`;
+
+        document.getElementById('solution').value = `**Step 1:** Add the force vectors component-wise
+
+$$\\\\vec{F}_R = (3 + (-1))\\\\hat{i} + (4 + 2)\\\\hat{j} = 2\\\\hat{i} + 6\\\\hat{j}\\\\text{ N}$$
+
+**Step 2:** Calculate the magnitude
+
+$$|\\\\vec{F}_R| = \\\\sqrt{(2)^2 + (6)^2} = \\\\sqrt{4 + 36} = \\\\sqrt{40} = 2\\\\sqrt{10}\\\\text{ N} \\\\approx 6.32\\\\text{ N}$$
+
+**Answer:** $2\\\\sqrt{10}$ N or approximately 6.32 N`;
+        
+        // Auto-render
+        ['description', 'hint', 'solution'].forEach(id => {
+            document.getElementById(id).addEventListener('input', renderPreview);
+        });
+        
+        function renderPreview() {
+            const description = document.getElementById('description').value;
+            const hint = document.getElementById('hint').value;
+            const solution = document.getElementById('solution').value;
+            
+            let html = '';
+            
+            if (description) {
+                html += `<div class="preview-card">
+                    <h3>📝 Problem</h3>
+                    <div class="content">${formatLatex(description)}</div>
+                </div>`;
+            }
+            
+            if (hint) {
+                html += `<div class="preview-card">
+                    <h3>💡 Hint</h3>
+                    <div class="content">${formatLatex(hint)}</div>
+                </div>`;
+            }
+            
+            if (solution) {
+                html += `<div class="preview-card">
+                    <h3>✅ Solution</h3>
+                    <div class="content">${formatLatex(solution)}</div>
+                </div>`;
+            }
+            
+            document.getElementById('preview').innerHTML = html || '<p style="color:#858585;padding:20px;">Start typing to see preview...</p>';
+            
+            // Render math
+            renderMathInElement(document.getElementById('preview'), {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError: false
+            });
+        }
+        
+        function formatLatex(text) {
+            let content = text;
+            content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            content = content.split('\\n\\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('');
+            return content;
+        }
+        
+        async function saveTask() {
+            const title = document.getElementById('title').value;
+            const subject = document.getElementById('subject').value;
+            const level = document.getElementById('level').value;
+            const type = document.getElementById('type').value;
+            const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t);
+            const points = parseInt(document.getElementById('points').value) || 10;
+            const description = document.getElementById('description').value;
+            const hint = document.getElementById('hint').value;
+            const solution = document.getElementById('solution').value;
+            
+            if (!title || !subject || !description || !solution) {
+                showStatus('Please fill in all required fields (title, subject, description, solution)', 'error');
+                return;
+            }
+            
+            const task = {
+                title,
+                subject,
+                level,
+                type,
+                tags,
+                points,
+                description_latex: description,
+                hint_latex: hint || '',
+                solution_latex: solution,
+                status: 'active'
+            };
+            
+            showStatus('Saving task...', '');
+            
+            try {
+                const token = localStorage.getItem('auth_token') || '';
+                const response = await fetch(`${API_BASE}/admin/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(task)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus(`✅ Task saved successfully! ID: ${data.id}`, 'success');
+                } else {
+                    const error = await response.text();
+                    showStatus(`❌ Failed to save: ${error}`, 'error');
+                }
+            } catch (err) {
+                showStatus(`❌ Error: ${err.message}`, 'error');
+            }
+        }
+        
+        function showStatus(msg, type) {
+            document.getElementById('status').textContent = msg;
+            document.getElementById('status').className = `status ${type}`;
+        }
+        
+        // Initial render
+        renderPreview();
+    </script>
+</body>
+</html>

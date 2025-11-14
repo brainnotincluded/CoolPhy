@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"coolphy-backend/internal/config"
@@ -115,13 +117,25 @@ func Profile() gin.HandlerFunc {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"id": u.ID, "email": u.Email, "name": u.Name, "role": u.Role, "points": u.Points})
+
+		c.JSON(http.StatusOK, gin.H{
+			"id":       u.ID,
+			"email":    u.Email,
+			"name":     u.Name,
+			"role":     u.Role,
+			"points":   u.Points,
+			"subjects": u.Subjects,
+			"settings": u.Settings,
+		})
 	}
 }
 
 type updateProfilePayload struct {
 	Name     string   `json:"name"`
 	Subjects []string `json:"subjects"`
+	Settings struct {
+		Language string `json:"language"`
+	} `json:"settings"`
 }
 
 // UpdateProfile godoc
@@ -152,11 +166,35 @@ func UpdateProfile() gin.HandlerFunc {
 		if p.Subjects != nil {
 			u.Subjects = p.Subjects
 		}
+
+		// Update language setting if provided
+		if p.Settings.Language != "" {
+			settings := map[string]interface{}{}
+			if len(u.Settings) > 0 {
+				if err := json.Unmarshal(u.Settings, &settings); err != nil {
+					// If existing settings are invalid, reset to empty map
+					settings = map[string]interface{}{}
+				}
+			}
+			settings["language"] = p.Settings.Language
+			if b, err := json.Marshal(settings); err == nil {
+				u.Settings = datatypes.JSON(b)
+			} else {
+				fmt.Println("failed to marshal user settings:", err)
+			}
+		}
+
 		if err := db.Get().Save(&u).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"id": u.ID, "email": u.Email, "name": u.Name, "subjects": u.Subjects})
+		c.JSON(http.StatusOK, gin.H{
+			"id":       u.ID,
+			"email":    u.Email,
+			"name":     u.Name,
+			"subjects": u.Subjects,
+			"settings": u.Settings,
+		})
 	}
 }
 

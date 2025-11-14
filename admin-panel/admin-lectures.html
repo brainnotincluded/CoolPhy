@@ -106,16 +106,18 @@
             flex-direction: column;
         }
 
-        #lecture-editor-pane {
-            flex: 1;
-            min-height: 0;
-        }
-
-        #monaco-lecture {
+        /* Monaco editor panes (same structure as task full editor) */
+        #monaco-editor,
+        #monaco-solution {
             flex: 1;
             min-height: 0;
             height: 100%;
             width: 100%;
+        }
+        #latex-editor,
+        #solution-editor {
+            flex: 1;
+            min-height: 0;
         }
 
         .preview-pane {
@@ -327,15 +329,21 @@
 <div class="container">
     <div class="editor-pane">
         <div class="tabs">
-            <button class="tab active" data-tab="lecture-editor">Lecture</button>
+            <button class="tab active" data-tab="latex-editor">Lecture</button>
+            <button class="tab" data-tab="solution-editor">Notes</button>
             <button class="tab" data-tab="tikz-visual">TikZ Visual</button>
             <button class="tab" data-tab="jsxgraph">Graph Plotter</button>
             <button class="tab" data-tab="lecture-settings">Lecture Settings</button>
         </div>
 
         <!-- Lecture LaTeX Editor -->
-        <div id="lecture-editor" class="editor-content active">
-            <div id="monaco-lecture"></div>
+        <div id="latex-editor" class="editor-content active">
+            <div id="monaco-editor"></div>
+        </div>
+
+        <!-- Optional secondary editor (notes/solution) -->
+        <div id="solution-editor" class="editor-content">
+            <div id="monaco-solution"></div>
         </div>
 
         <!-- TikZ Visual Editor (same tools as tasks) -->
@@ -495,6 +503,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.nls.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
 
-<script src="admin-lectures-script.js"></script>
+<script src="admin-lectures-script.js?v=2"></script>
 </body>
 </html>

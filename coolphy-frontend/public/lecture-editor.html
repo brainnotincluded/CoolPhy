@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecture Editor - CoolPhy</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #252526;
+            padding: 15px 20px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 { font-size: 20px; font-weight: 600; }
+        
+        .btn {
+            padding: 8px 16px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-left: 10px;
+        }
+        
+        .btn:hover { background: #1177bb; }
+        .btn-secondary { background: #3e3e42; }
+        .btn-secondary:hover { background: #505050; }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .editor-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #3e3e42;
+        }
+        
+        .form-section {
+            padding: 20px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            overflow-y: auto;
+            max-height: 200px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #cccccc;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            background: #3c3c3c;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            color: #d4d4d4;
+            font-size: 13px;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #0e639c;
+        }
+        
+        #editor {
+            flex: 1;
+            border: none;
+        }
+        
+        .preview-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .preview-header {
+            padding: 10px 20px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        #preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #1e1e1e;
+            line-height: 1.6;
+        }
+        
+        #preview h2 {
+            color: #4fc3f7;
+            margin: 20px 0 10px 0;
+            font-size: 24px;
+        }
+        
+        #preview h3 {
+            color: #81c784;
+            margin: 15px 0 8px 0;
+            font-size: 20px;
+        }
+        
+        #preview p {
+            margin: 10px 0;
+        }
+        
+        .katex { font-size: 1.1em; }
+        
+        .status {
+            padding: 10px 20px;
+            background: #2d2d30;
+            border-top: 1px solid #3e3e42;
+            font-size: 12px;
+            color: #858585;
+        }
+        
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📖 Lecture Editor</h1>
+        <div>
+            <button class="btn btn-secondary" onclick="window.location.href='/admin.html'">← Back</button>
+            <button class="btn" onclick="saveLecture()">💾 Save Lecture</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="editor-section">
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Title *</label>
+                    <input type="text" id="title" placeholder="Lecture title" value="Introduction to Quantum Mechanics">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Subject *</label>
+                        <select id="subject">
+                            <option value="physics">Physics</option>
+                            <option value="math">Math</option>
+                            <option value="cs">Computer Science</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Level *</label>
+                        <select id="level">
+                            <option value="basic">Basic</option>
+                            <option value="advanced" selected>Advanced</option>
+                            <option value="olympiad">Olympiad</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Summary</label>
+                    <textarea id="summary" rows="2" placeholder="Brief description">An introduction to the fundamental concepts of quantum mechanics.</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Tags (comma-separated)</label>
+                    <input type="text" id="tags" placeholder="quantum, physics, advanced" value="quantum, physics, wave function">
+                </div>
+            </div>
+            
+            <textarea id="editor" spellcheck="false"></textarea>
+        </div>
+        
+        <div class="preview-section">
+            <div class="preview-header">Live Preview</div>
+            <div id="preview"></div>
+        </div>
+    </div>
+    
+    <div class="status" id="status">Ready</div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <script>
+        const API_BASE = 'http://178.255.127.62:8081/api/v1';
+        
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const status = document.getElementById('status');
+        
+        // Default template
+        editor.value = `\\section{Introduction}
+
+Quantum mechanics is the fundamental theory describing the behavior of matter and energy at atomic and subatomic scales.
+
+\\subsection{Wave Function}
+
+The wave function $\\Psi(\\mathbf{r},t)$ describes the quantum state:
+
+$$\\Psi(\\mathbf{r},t) = A e^{i(\\mathbf{k} \\cdot \\mathbf{r} - \\omega t)}$$
+
+\\subsection{Heisenberg Uncertainty Principle}
+
+The uncertainty principle states:
+
+$$\\Delta x \\Delta p \\geq \\frac{\\hbar}{2}$$
+
+Where $\\Delta x$ is position uncertainty and $\\Delta p$ is momentum uncertainty.
+
+\\section{Schrödinger Equation}
+
+The time-dependent Schrödinger equation is:
+
+$$i\\hbar\\frac{\\partial}{\\partial t}\\Psi = \\hat{H}\\Psi$$
+
+Where $\\hat{H}$ is the Hamiltonian operator.
+
+\\section{Key Concepts}
+
+\\textbf{Superposition:} A quantum system can exist in multiple states simultaneously.
+
+\\textbf{Entanglement:} Quantum particles can be correlated in ways impossible classically.
+
+\\textbf{Measurement:} Observing a quantum system causes wave function collapse.`;
+        
+        // Auto-render on input
+        let renderTimeout;
+        editor.addEventListener('input', () => {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(renderPreview, 300);
+        });
+        
+        function renderPreview() {
+            let content = editor.value;
+            
+            // Replace LaTeX sections
+            content = content.replace(/\\\\section\{([^}]+)\}/g, '<h2>$1</h2>');
+            content = content.replace(/\\\\subsection\{([^}]+)\}/g, '<h3>$1</h3>');
+            content = content.replace(/\\\\textbf\{([^}]+)\}/g, '<strong>$1</strong>');
+            content = content.replace(/\\\\textit\{([^}]+)\}/g, '<em>$1</em>');
+            
+            // Convert line breaks to paragraphs
+            content = content.split('\n\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('');
+            
+            preview.innerHTML = content;
+            
+            // Render math with KaTeX
+            renderMathInElement(preview, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '\\(', right: '\\)', display: false}
+                ],
+                throwOnError: false
+            });
+        }
+        
+        async function saveLecture() {
+            const title = document.getElementById('title').value;
+            const subject = document.getElementById('subject').value;
+            const level = document.getElementById('level').value;
+            const summary = document.getElementById('summary').value;
+            const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t);
+            const content = editor.value;
+            
+            if (!title || !subject || !content) {
+                showStatus('Please fill in all required fields (title, subject, content)', 'error');
+                return;
+            }
+            
+            const lecture = {
+                title,
+                subject,
+                level,
+                summary,
+                tags,
+                content_latex: content,
+                status: 'active'
+            };
+            
+            showStatus('Saving lecture...', '');
+            
+            try {
+                const token = localStorage.getItem('auth_token') || '';
+                const response = await fetch(`${API_BASE}/admin/lectures`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(lecture)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus(`✅ Lecture saved successfully! ID: ${data.id}`, 'success');
+                } else {
+                    const error = await response.text();
+                    showStatus(`❌ Failed to save: ${error}`, 'error');
+                }
+            } catch (err) {
+                showStatus(`❌ Error: ${err.message}`, 'error');
+            }
+        }
+        
+        function showStatus(msg, type) {
+            status.textContent = msg;
+            status.className = `status ${type}`;
+        }
+        
+        // Initial render
+        renderPreview();
+    </script>
+</body>
+</html>

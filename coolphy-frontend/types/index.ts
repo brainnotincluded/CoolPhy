@@ -235,3 +235,14 @@ export interface TopicFilters {
   search?: string;
 }
 
+// Achievement types
+export interface Achievement {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
+  progress?: number;
+  max_progress?: number;
+  category: string;
+}

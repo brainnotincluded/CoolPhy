@@ -1,6 +1,7 @@
 import apiClient from './client';
 import type {
   User,
+  Achievement,
   Lecture,
   Task,
   Topic,
@@ -72,7 +73,7 @@ export const notificationApi = {
 
 // Achievement endpoints
 export const achievementApi = {
-  list: () => apiClient.get('/achievements'),
+  list: () => apiClient.get<Achievement[]>('/achievements'),
 };
 
 // History endpoints
