@@ -69,7 +69,7 @@ export default function ProfilePage() {
               <h2 className="text-2xl font-bold mb-2">{user.name}</h2>
               <p className="text-foreground/70 mb-4">{user.email}</p>
               <div className="flex flex-wrap gap-2">
-                {user.subjects.map((subject, idx) => (
+                {(user.subjects || []).map((subject, idx) => (
                   <Badge key={idx} variant={subject as any}>
                     {subject}
                   </Badge>
@@ -135,7 +135,7 @@ export default function ProfilePage() {
             <CardDescription>Your problem-solving distribution</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {Object.entries(stats.tasks_by_subject).map(([subject, count]) => (
+            {Object.entries(stats.tasks_by_subject || {}).map(([subject, count]) => (
               <div key={subject} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Badge variant={subject as any}>{subject}</Badge>
@@ -152,7 +152,7 @@ export default function ProfilePage() {
             <CardDescription>Your learning distribution</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {Object.entries(stats.lectures_by_subject).map(([subject, count]) => (
+            {Object.entries(stats.lectures_by_subject || {}).map(([subject, count]) => (
               <div key={subject} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Badge variant={subject as any}>{subject}</Badge>

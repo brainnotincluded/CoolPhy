@@ -73,7 +73,8 @@ export const notificationApi = {
 
 // Achievement endpoints
 export const achievementApi = {
-  list: () => apiClient.get<Achievement[]>('/achievements'),
+  // Backend returns an object: { achievements: Achievement[] (jsonb), points: number }
+  list: () => apiClient.get<{ achievements?: Achievement[]; points?: number }>('/achievements'),
 };
 
 // History endpoints

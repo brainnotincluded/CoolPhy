@@ -26,7 +26,10 @@ export default function AchievementsPage() {
     const fetchAchievements = async () => {
       try {
         const data = await achievementApi.list();
-        setAchievements(data);
+        const list = Array.isArray((data as any)?.achievements)
+          ? ((data as any).achievements as Achievement[])
+          : [];
+        setAchievements(list);
       } catch (error) {
         console.error('Failed to fetch achievements:', error);
       } finally {
