@@ -102,10 +102,13 @@ export interface Note {
 export interface ChatMessage {
   id: number;
   user_id: number;
-  message: string;
-  response: string;
-  context: Record<string, any>;
-  created_at: string;
+  user_message: string;
+  ai_reply: string;
+  response?: string; // Alias for ai_reply
+  context_type?: string;
+  context_id?: number;
+  timestamp: string;
+  created_at?: string;
 }
 
 // Notification types

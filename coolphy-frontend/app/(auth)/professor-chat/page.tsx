@@ -102,7 +102,7 @@ export default function ProfessorChatPage() {
                       <User className="w-4 h-4" />
                       <span className="font-semibold text-sm">You</span>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                    <p className="text-sm whitespace-pre-wrap">{msg.user_message}</p>
                   </div>
                 </div>
 
@@ -114,11 +114,11 @@ export default function ProfessorChatPage() {
                       <span className="font-semibold text-sm">AI Professor</span>
                     </div>
                     <div className="prose prose-invert prose-sm max-w-none">
-                      <LatexRenderer content={msg.response} />
+                      <LatexRenderer content={msg.ai_reply || msg.response || ''} />
                     </div>
-                    {msg.context && Object.keys(msg.context).length > 0 && (
+                    {msg.context_type && (
                       <div className="mt-3 pt-3 border-t text-xs text-foreground/60">
-                        <p>Context used: {JSON.stringify(msg.context)}</p>
+                        <p>Context: {msg.context_type} {msg.context_id ? `#${msg.context_id}` : ''}</p>
                       </div>
                     )}
                   </div>

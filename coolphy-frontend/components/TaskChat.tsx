@@ -172,7 +172,7 @@ export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
               <Button
                 onClick={handleSend}
                 disabled={sending || !input.trim()}
-                size="icon"
+                className="px-3"
               >
                 {sending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
