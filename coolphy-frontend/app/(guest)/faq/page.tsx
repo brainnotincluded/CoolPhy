@@ -23,7 +23,7 @@ export default function FAQPage() {
     },
     {
       question: 'How does the AI Professor work?',
-      answer: 'Our AI Professor uses advanced language models to provide instant feedback on your solutions, offer hints when you're stuck, explain concepts, and recommend personalized learning paths based on your progress.'
+      answer: "Our AI Professor uses advanced language models to provide instant feedback on your solutions, offer hints when you're stuck, explain concepts, and recommend personalized learning paths based on your progress."
     },
     {
       question: 'Can I track my progress?',
