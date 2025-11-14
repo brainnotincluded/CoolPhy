@@ -61,6 +61,12 @@ export const topicApi = {
 // Professor Chat endpoints
 export const chatApi = {
   send: (message: string) => apiClient.post<ChatMessage>('/professor-chat', { message }),
+  sendWithContext: (message: string, contextType: string, contextId: number) =>
+    apiClient.post<ChatMessage>('/professor-chat', {
+      message,
+      context_type: contextType,
+      context_id: contextId,
+    }),
   getHistory: () => apiClient.get<ChatMessage[]>('/professor-chat/history'),
   get: (id: number) => apiClient.get<ChatMessage>(`/professor-chat/${id}`),
 };
@@ -126,6 +132,15 @@ export const adminApi = {
     formData.append('video', file);
     return apiClient.upload<VideoAsset>('/admin/videos', formData);
   },
+  
+  // AI Settings
+  getSettings: () => apiClient.get<any>('/admin/settings'),
+  updateSettings: (data: {
+    openrouter_api_key?: string;
+    system_prompt?: string;
+    primary_model?: string;
+    fallback_model?: string;
+  }) => apiClient.put<any>('/admin/settings', data),
 };
 
 // Solution endpoints

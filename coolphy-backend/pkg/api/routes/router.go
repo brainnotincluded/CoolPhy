@@ -62,8 +62,8 @@ func Register(r *gin.Engine, cfg config.Config) {
 			// Notifications
 			auth.GET("/notifications", handlers.ListNotifications())
 			auth.PUT("/notifications/:id/read", handlers.MarkNotificationRead())
-			// Professor Chat
-			auth.POST("/professor-chat", handlers.ProfessorChat())
+			// Professor Chat (with AI)
+			auth.POST("/professor-chat", handlers.ProfessorChatWithAI())
 			auth.GET("/professor-chat/history", handlers.ChatHistory())
 			auth.GET("/professor-chat/:id", handlers.GetChatMessage())
 			// Achievements
@@ -99,6 +99,9 @@ func Register(r *gin.Engine, cfg config.Config) {
 				admin.GET("/users/:id", handlers.GetUser())
 				admin.PUT("/users/:id", handlers.UpdateUser())
 				admin.DELETE("/users/:id", handlers.DeleteUser())
+				// Admin AI settings
+				admin.GET("/settings", handlers.GetSettings())
+				admin.PUT("/settings", handlers.UpdateSettings())
 			}
 		}
 		// Leaderboard (public)

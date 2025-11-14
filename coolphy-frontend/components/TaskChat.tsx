@@ -58,7 +58,7 @@ export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
 
     try {
       // Send to backend with task context
-      const response = await chatApi.send(input.trim());
+      const response = await chatApi.sendWithContext(input.trim(), 'task', taskId);
       
       const assistantMessage: Message = {
         id: response.id?.toString() || (Date.now() + 1).toString(),
