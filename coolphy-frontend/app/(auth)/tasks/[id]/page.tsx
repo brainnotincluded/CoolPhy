@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input';
 import { taskApi } from '@/lib/api/endpoints';
 import { Task, SolutionAttempt } from '@/types';
 import { ArrowLeft, Send, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
+import { TaskChat } from '@/components/TaskChat';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -247,7 +248,7 @@ export default function TaskDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle>Need Help?</CardTitle>
-          <CardDescription>Review related lectures</CardDescription>
+          <CardDescription>Review related lectures or use the AI Teacher chat (bottom right)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <Link href={`/lectures?subject=${task.subject}`}>
@@ -255,13 +256,11 @@ export default function TaskDetailPage() {
               View {task.subject} Lectures
             </Button>
           </Link>
-          <Link href="/professor-chat">
-            <Button variant="outline" className="w-full">
-              Ask AI Professor
-            </Button>
-          </Link>
         </CardContent>
       </Card>
+
+      {/* AI Teacher Chat */}
+      <TaskChat taskId={task.id} taskTitle={task.title} />
     </div>
   );
 }

@@ -1,0 +1,102 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Register"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "lectures": "Lectures",
+    "tasks": "Tasks",
+    "topics": "Topics",
+    "professorChat": "Professor Chat",
+    "achievements": "Achievements",
+    "profile": "Profile",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "leaderboard": "Leaderboard",
+    "history": "History"
+  },
+  "profile": {
+    "title": "Profile",
+    "settings": "Settings",
+    "name": "Name",
+    "email": "Email",
+    "points": "Points",
+    "totalPoints": "Total Points",
+    "subjects": "Subjects",
+    "language": "Language",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "updateProfile": "Update your account details",
+    "updatePassword": "Update your account password",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "changing": "Changing...",
+    "profileUpdated": "Profile updated successfully!",
+    "passwordChanged": "Password changed successfully!",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters"
+  },
+  "achievements": {
+    "title": "Achievements",
+    "description": "Track your progress and unlock badges by completing challenges",
+    "unlocked": "Unlocked",
+    "locked": "Locked",
+    "progress": "Progress"
+  },
+  "lectures": {
+    "title": "Lectures",
+    "description": "Explore our comprehensive lecture library",
+    "views": "views",
+    "noLectures": "No lectures found. Try adjusting your filters."
+  },
+  "tasks": {
+    "title": "Tasks",
+    "description": "Challenge yourself with practice problems",
+    "points": "pts",
+    "noTasks": "No tasks found. Try adjusting your filters."
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "progress": "Here's your learning progress",
+    "totalPoints": "Total Points",
+    "tasksSolved": "Tasks Solved",
+    "lecturesViewed": "Lectures Viewed",
+    "currentStreak": "Current Streak",
+    "days": "days",
+    "keepItUp": "Keep it up!",
+    "greatProgress": "Great progress!",
+    "dontBreak": "Don't break it!",
+    "quickActions": "Quick Actions",
+    "browseLectures": "Browse Lectures",
+    "solveTasks": "Solve Tasks",
+    "askProfessor": "Ask Professor",
+    "recentLectures": "Recent Lectures",
+    "recommendedTasks": "Recommended Tasks",
+    "continueWhereYouLeftOff": "Continue where you left off",
+    "basedOnYourProgress": "Based on your progress"
+  },
+  "subjects": {
+    "math": "Math",
+    "physics": "Physics",
+    "cs": "CS",
+    "all": "All"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "zh": "中文"
+  }
+}

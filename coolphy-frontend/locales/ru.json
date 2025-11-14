@@ -1,0 +1,102 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "back": "Назад",
+    "next": "Далее",
+    "previous": "Предыдущий",
+    "search": "Поиск",
+    "logout": "Выйти",
+    "login": "Войти",
+    "register": "Регистрация"
+  },
+  "nav": {
+    "dashboard": "Панель",
+    "lectures": "Лекции",
+    "tasks": "Задачи",
+    "topics": "Темы",
+    "professorChat": "Чат с преподавателем",
+    "achievements": "Достижения",
+    "profile": "Профиль",
+    "settings": "Настройки",
+    "notifications": "Уведомления",
+    "leaderboard": "Рейтинг",
+    "history": "История"
+  },
+  "profile": {
+    "title": "Профиль",
+    "settings": "Настройки",
+    "name": "Имя",
+    "email": "Эл. почта",
+    "points": "Очки",
+    "totalPoints": "Всего очков",
+    "subjects": "Предметы",
+    "language": "Язык",
+    "changePassword": "Сменить пароль",
+    "currentPassword": "Текущий пароль",
+    "newPassword": "Новый пароль",
+    "confirmPassword": "Подтвердите новый пароль",
+    "updateProfile": "Обновите данные вашего аккаунта",
+    "updatePassword": "Обновите пароль вашего аккаунта",
+    "saveChanges": "Сохранить изменения",
+    "saving": "Сохранение...",
+    "changing": "Изменение...",
+    "profileUpdated": "Профиль успешно обновлен!",
+    "passwordChanged": "Пароль успешно изменен!",
+    "passwordMismatch": "Пароли не совпадают",
+    "passwordTooShort": "Пароль должен содержать не менее 6 символов"
+  },
+  "achievements": {
+    "title": "Достижения",
+    "description": "Отслеживайте свой прогресс и получайте значки за выполнение заданий",
+    "unlocked": "Разблокировано",
+    "locked": "Заблокировано",
+    "progress": "Прогресс"
+  },
+  "lectures": {
+    "title": "Лекции",
+    "description": "Изучайте нашу обширную библиотеку лекций",
+    "views": "просмотров",
+    "noLectures": "Лекции не найдены. Попробуйте изменить фильтры."
+  },
+  "tasks": {
+    "title": "Задачи",
+    "description": "Бросьте себе вызов с практическими задачами",
+    "points": "баллов",
+    "noTasks": "Задачи не найдены. Попробуйте изменить фильтры."
+  },
+  "dashboard": {
+    "welcome": "С возвращением",
+    "progress": "Вот ваш прогресс в обучении",
+    "totalPoints": "Всего очков",
+    "tasksSolved": "Решено задач",
+    "lecturesViewed": "Просмотрено лекций",
+    "currentStreak": "Текущая серия",
+    "days": "дней",
+    "keepItUp": "Так держать!",
+    "greatProgress": "Отличный прогресс!",
+    "dontBreak": "Не прерывайте серию!",
+    "quickActions": "Быстрые действия",
+    "browseLectures": "Обзор лекций",
+    "solveTasks": "Решать задачи",
+    "askProfessor": "Спросить преподавателя",
+    "recentLectures": "Последние лекции",
+    "recommendedTasks": "Рекомендуемые задачи",
+    "continueWhereYouLeftOff": "Продолжите с того места, где остановились",
+    "basedOnYourProgress": "На основе вашего прогресса"
+  },
+  "subjects": {
+    "math": "Математика",
+    "physics": "Физика",
+    "cs": "Информатика",
+    "all": "Все"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "zh": "中文"
+  }
+}

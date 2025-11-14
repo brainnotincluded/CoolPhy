@@ -174,21 +174,21 @@ export default function SettingsPage() {
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                variant={language === 'en' ? 'default' : 'outline'}
+                variant={language === 'en' ? 'primary' : 'outline'}
                 onClick={() => setLanguage('en')}
               >
                 English
               </Button>
               <Button
                 type="button"
-                variant={language === 'ru' ? 'default' : 'outline'}
+                variant={language === 'ru' ? 'primary' : 'outline'}
                 onClick={() => setLanguage('ru')}
               >
                 Русский
               </Button>
               <Button
                 type="button"
-                variant={language === 'zh' ? 'default' : 'outline'}
+                variant={language === 'zh' ? 'primary' : 'outline'}
                 onClick={() => setLanguage('zh')}
               >
                 中文
