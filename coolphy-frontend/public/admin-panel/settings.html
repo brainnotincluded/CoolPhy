@@ -202,9 +202,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="systemPrompt">System Prompt *</label>
-                    <span class="description">Instructions that define how the AI teacher should behave</span>
-                    <textarea id="systemPrompt" name="system_prompt" placeholder="You are a helpful physics, math, and computer science teacher..."></textarea>
+                    <label for="professorPrompt">Professor Chat Prompt *</label>
+                    <span class="description">System prompt for the Professor Chat (has access to student stats, lectures, tasks). Can reference [Task: Title](#/tasks/ID) or [Lecture: Title](#/lectures/ID)</span>
+                    <textarea id="professorPrompt" name="professor_prompt" placeholder="You are a knowledgeable professor..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskAssistantPrompt">Task Assistant Prompt *</label>
+                    <span class="description">System prompt for in-task help chat. Can generate TikZ diagrams using \begin{tikzpicture}...\end{tikzpicture}</span>
+                    <textarea id="taskAssistantPrompt" name="task_assistant_prompt" placeholder="You are an AI tutor helping a student solve a problem..."></textarea>
                 </div>
 
                 <button type="submit" class="btn" id="saveBtn">
@@ -254,7 +260,8 @@
                     document.getElementById('apiKey').value = data.openrouter_api_key || '';
                     document.getElementById('primaryModel').value = data.primary_model || 'anthropic/claude-3.5-sonnet';
                     document.getElementById('fallbackModel').value = data.fallback_model || 'google/gemini-2.0-flash-exp:free';
-                    document.getElementById('systemPrompt').value = data.system_prompt || '';
+                    document.getElementById('professorPrompt').value = data.professor_prompt || '';
+                    document.getElementById('taskAssistantPrompt').value = data.task_assistant_prompt || '';
                 } else if (response.status === 401) {
                     showAlert('Session expired. Please login again.', 'error');
                     setTimeout(() => window.location.href = 'auth.html', 2000);
@@ -283,7 +290,8 @@
                 openrouter_api_key: document.getElementById('apiKey').value,
                 primary_model: document.getElementById('primaryModel').value,
                 fallback_model: document.getElementById('fallbackModel').value,
-                system_prompt: document.getElementById('systemPrompt').value
+                professor_prompt: document.getElementById('professorPrompt').value,
+                task_assistant_prompt: document.getElementById('taskAssistantPrompt').value
             };
 
             try {
