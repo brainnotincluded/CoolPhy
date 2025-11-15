@@ -77,13 +77,13 @@ func ProfessorChatWithAI() gin.HandlerFunc {
 			var task models.Task
 			if err := db.Get().First(&task, *p.ContextID).Error; err == nil {
 				contextInfo = fmt.Sprintf("\n\n**Task Context:**\nTitle: %s\nDescription:\n%s\n\nSolution (for reference):\n%s",
-					task.Title, task.DescriptionLatex, task.SolutionLatex)
+					task.Title, task.DescriptionLaTeX, task.SolutionLaTeX)
 			}
 		} else if p.ContextType == "lecture" && p.ContextID != nil {
 			var lecture models.Lecture
 			if err := db.Get().First(&lecture, *p.ContextID).Error; err == nil {
 				contextInfo = fmt.Sprintf("\n\n**Lecture Context:**\nTitle: %s\nContent:\n%s",
-					lecture.Title, lecture.ContentLatex)
+					lecture.Title, lecture.ContentLaTeX)
 			}
 		}
 
