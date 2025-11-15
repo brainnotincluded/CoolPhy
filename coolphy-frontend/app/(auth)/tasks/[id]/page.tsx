@@ -37,6 +37,7 @@ export default function TaskDetailPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -89,7 +90,10 @@ export default function TaskDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll within chat container only, not the whole page
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSendMessage = async () => {
@@ -233,7 +237,7 @@ export default function TaskDetailPage() {
           <CardDescription>Get help solving the problem. The AI will automatically evaluate your answer when you provide it.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4 max-h-[50vh] overflow-y-auto p-2 bg-slate-900/40 rounded-md border border-slate-800">
+          <div ref={chatContainerRef} className="space-y-4 max-h-[50vh] overflow-y-auto p-2 bg-slate-900/40 rounded-md border border-slate-800">
             {messages.map((m, idx) => (
               <div key={idx} className={m.role === 'user' ? 'text-right' : 'text-left'}>
                 <div className={`inline-block px-3 py-2 rounded-lg ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-100'} max-w-[95%]`}>
