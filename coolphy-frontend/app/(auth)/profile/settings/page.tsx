@@ -10,9 +10,11 @@ import { Loading } from '@/components/ui/Loading';
 import { authApi } from '@/lib/api/endpoints';
 import { User } from '@/types';
 import { ArrowLeft, Save } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { setLocale } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -62,6 +64,8 @@ export default function SettingsPage() {
           language,
         },
       });
+      // Update the locale in I18n context immediately
+      setLocale(language);
       alert('Profile updated successfully!');
     } catch (error) {
       console.error('Failed to update profile:', error);
