@@ -37,6 +37,7 @@ export function LatexRenderer({ content, className = '', displayMode = false }: 
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
   <script src="https://tikzjax.com/v1/tikzjax.js"></script>
   <style>
@@ -50,8 +51,9 @@ export function LatexRenderer({ content, className = '', displayMode = false }: 
   </script>
 </body>
 </html>`;
-          const encoded = encodeURIComponent(iframeHtml);
-          return `<div style="display:inline-block;background:white;border-radius:12px;padding:20px;margin:20px 0;width:250px;height:250px;overflow:hidden;"><iframe id="${id}" style="border:none;width:100%;height:100%;" src="data:text/html;charset=utf-8,${encoded}"></iframe></div>`;
+          // Use base64 encoding to support all Unicode characters
+          const base64 = btoa(unescape(encodeURIComponent(iframeHtml)));
+          return `<div style="display:inline-block;background:white;border-radius:12px;padding:20px;margin:20px 0;width:250px;height:250px;overflow:hidden;"><iframe id="${id}" style="border:none;width:100%;height:100%;" src="data:text/html;base64,${base64}"></iframe></div>`;
         }
       );
 
