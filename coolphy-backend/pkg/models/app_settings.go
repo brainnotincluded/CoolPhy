@@ -4,7 +4,7 @@ import "time"
 
 type AppSettings struct {
 	ID                uint      `gorm:"primaryKey" json:"id"`
-	OpenRouterAPIKey  string    `gorm:"type:text" json:"openrouter_api_key,omitempty"`
+	OpenRouterAPIKey  string    `gorm:"column:openrouter_api_key;type:text" json:"openrouter_api_key,omitempty"`
 	SystemPrompt      string    `gorm:"type:text" json:"system_prompt"`
 	PrimaryModel      string    `gorm:"default:'anthropic/claude-3.5-sonnet'" json:"primary_model"`
 	FallbackModel     string    `gorm:"default:'google/gemini-2.0-flash-exp:free'" json:"fallback_model"`

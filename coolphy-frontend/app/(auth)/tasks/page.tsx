@@ -9,13 +9,21 @@ import { Loading } from '@/components/ui/Loading';
 import { taskApi } from '@/lib/api/endpoints';
 import { Task } from '@/types';
 import { Search, CheckSquare, Trophy } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 
 export default function TasksPage() {
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
+
+  const getSubjectLabel = (subject: string) => {
+    const key = `subjects.${subject}`;
+    const translated = t(key);
+    return translated === key ? subject : translated;
+  };
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -56,8 +64,8 @@ export default function TasksPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Tasks</h1>
-        <p className="text-foreground/70">Challenge yourself with practice problems</p>
+        <h1 className="text-3xl font-bold mb-2">{t('tasks.title')}</h1>
+        <p className="text-foreground/70">{t('tasks.description')}</p>
       </div>
 
       {/* Filters */}
@@ -65,7 +73,7 @@ export default function TasksPage() {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-foreground/60" />
           <Input
-            placeholder="Search tasks..."
+            placeholder={t('tasks.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -77,28 +85,28 @@ export default function TasksPage() {
             className="cursor-pointer"
             onClick={() => setSelectedSubject('all')}
           >
-            All
+            {t('subjects.all')}
           </Badge>
           <Badge
             variant="math"
             className="cursor-pointer"
             onClick={() => setSelectedSubject('math')}
           >
-            Math
+            {t('subjects.math')}
           </Badge>
           <Badge
             variant="physics"
             className="cursor-pointer"
             onClick={() => setSelectedSubject('physics')}
           >
-            Physics
+            {t('subjects.physics')}
           </Badge>
           <Badge
             variant="cs"
             className="cursor-pointer"
             onClick={() => setSelectedSubject('cs')}
           >
-            CS
+            {t('subjects.cs')}
           </Badge>
         </div>
       </div>
@@ -115,7 +123,7 @@ export default function TasksPage() {
                   ) : (
                     <CheckSquare className="w-5 h-5 text-primary" />
                   )}
-                  <Badge variant={task.subject as any}>{task.subject}</Badge>
+                  <Badge variant={task.subject as any}>{getSubjectLabel(task.subject)}</Badge>
                 </div>
                 <CardTitle className="line-clamp-2">{task.title}</CardTitle>
                 <CardDescription>Level: {task.level}</CardDescription>
@@ -123,7 +131,7 @@ export default function TasksPage() {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   <Badge>{task.type}</Badge>
-                  <Badge variant="success">{task.points} pts</Badge>
+                  <Badge variant="success">{task.points} {t('tasks.points')}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -133,7 +141,7 @@ export default function TasksPage() {
 
       {filteredTasks.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-foreground/60">No tasks found. Try adjusting your filters.</p>
+          <p className="text-foreground/60">{t('tasks.noTasks')}</p>
         </div>
       )}
     </div>

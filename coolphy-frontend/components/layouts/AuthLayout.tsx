@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { 
@@ -27,16 +28,17 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children }: AuthLayoutProps) {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Lectures', href: '/lectures', icon: BookOpen },
-    { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-    { name: 'Topics', href: '/topics', icon: Network },
-    { name: 'Professor Chat', href: '/professor-chat', icon: MessageSquare },
-    { name: 'Achievements', href: '/achievements', icon: Trophy },
+    { name: t('nav.dashboard'), href: '/dashboard', icon: Home },
+    { name: t('nav.lectures'), href: '/lectures', icon: BookOpen },
+    { name: t('nav.tasks'), href: '/tasks', icon: CheckSquare },
+    { name: t('nav.topics'), href: '/topics', icon: Network },
+    { name: t('nav.professorChat'), href: '/professor-chat', icon: MessageSquare },
+    { name: t('nav.achievements'), href: '/achievements', icon: Trophy },
   ];
 
   const handleLogout = async () => {
@@ -89,7 +91,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{user?.name}</p>
-                <p className="text-sm text-foreground/60 truncate">{user?.points || 0} pts</p>
+                <p className="text-sm text-foreground/60 truncate">{user?.points || 0} {t('tasks.points')}</p>
               </div>
             </Link>
           </div>
@@ -111,7 +113,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             <div className="flex-1 max-w-2xl mx-4">
               <input
                 type="search"
-                placeholder="Search lectures, tasks, topics..."
+                placeholder={t('common.searchPlaceholder')}
                 className="w-full px-4 py-2 rounded-lg bg-input border border-border focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -124,7 +126,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
-                Logout
+                {t('common.logout')}
               </Button>
             </div>
           </div>

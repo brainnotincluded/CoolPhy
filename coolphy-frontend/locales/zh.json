@@ -11,7 +11,8 @@
     "search": "搜索",
     "logout": "登出",
     "login": "登录",
-    "register": "注册"
+    "register": "注册",
+    "searchPlaceholder": "搜索讲座、任务和主题..."
   },
   "nav": {
     "dashboard": "仪表板",
@@ -60,13 +61,59 @@
     "title": "讲座",
     "description": "探索我们的综合讲座库",
     "views": "浏览",
-    "noLectures": "未找到讲座。请尝试调整筛选条件。"
+    "noLectures": "未找到讲座。请尝试调整筛选条件。",
+    "searchPlaceholder": "搜索讲座...",
+    "notFound": "未找到讲座",
+    "completeSuccess": "讲座已标记为已完成！",
+    "completeError": "无法标记讲座为已完成",
+    "addNoteError": "无法添加笔记",
+    "videoLecture": "视频讲座",
+    "contentTitle": "讲座内容",
+    "notesTitle": "我的笔记",
+    "showNotes": "显示笔记",
+    "hideNotes": "隐藏笔记",
+    "addNotePlaceholder": "添加笔记...",
+    "addNoteButton": "添加",
+    "noNotesYet": "还没有笔记。请在上方添加第一条笔记！",
+    "relatedTasksTitle": "相关练习题",
+    "relatedTasksDescription": "应用你刚学到的知识",
+    "viewTasksForPrefix": "查看任务：",
+    "marking": "标记中...",
+    "markAsCompleted": "标记为已完成",
+    "videoUnsupported": "您的浏览器不支持 video 标签。",
+    "backToList": "返回讲座列表"
   },
   "tasks": {
     "title": "任务",
     "description": "用练习题挑战自己",
     "points": "分",
-    "noTasks": "未找到任务。请尝试调整筛选条件。"
+    "noTasks": "未找到任务。请尝试调整筛选条件。",
+    "searchPlaceholder": "搜索任务...",
+    "notFound": "未找到任务",
+    "backToList": "返回任务列表",
+    "problem": "题目",
+    "hint": "提示",
+    "showHint": "显示提示",
+    "hideHint": "隐藏提示",
+    "yourAnswer": "你的答案",
+    "answerDescription": "提交你的解答以获得 AI 反馈",
+    "answerPlaceholder": "输入你的答案...",
+    "submit": "提交",
+    "submitting": "提交中...",
+    "correctTitle": "回答正确！🎉",
+    "incorrectTitle": "还不太对",
+    "pointsEarned": "分获得！",
+    "solution": "解析",
+    "showSolution": "显示解析",
+    "hideSolution": "隐藏解析",
+    "taskCompletedTitle": "任务已完成！",
+    "taskCompletedDescription": "做得好！你已经成功解决了这道题并获得",
+    "tryMorePrefix": "继续练习",
+    "needHelpTitle": "需要帮助？",
+    "needHelpDescription": "查看相关讲座或使用右下角的 AI 聊天助手",
+    "viewLecturesPrefix": "查看",
+    "alertEnterAnswer": "请输入答案",
+    "alertSubmitFailed": "提交答案失败"
   },
   "dashboard": {
     "welcome": "欢迎回来",
@@ -86,7 +133,12 @@
     "recentLectures": "最近的讲座",
     "recommendedTasks": "推荐任务",
     "continueWhereYouLeftOff": "从您离开的地方继续",
-    "basedOnYourProgress": "根据您的进度"
+    "basedOnYourProgress": "根据您的进度",
+    "level": "等级",
+    "beginner": "初学者",
+    "quickActionsDescription": "立即开始学习",
+    "noLecturesYet": "还没有讲座记录，开始学习吧！",
+    "noTasksYet": "还没有任务记录，开始做题吧！"
   },
   "subjects": {
     "math": "数学",
@@ -98,5 +150,21 @@
     "en": "English",
     "ru": "Русский",
     "zh": "中文"
+  },
+  "admin": {
+    "users": "用户",
+    "logs": "日志",
+    "userView": "用户视图",
+    "administrator": "管理员"
+  },
+  "taskChat": {
+    "title": "AI 老师",
+    "subtitle": "向我提问",
+    "greetingPrefix": "你好！我是你的 AI 老师，我会帮助你完成这道题",
+    "greetingSuffix": "可以随时询问题目、概念或向我索要提示！",
+    "thinking": "思考中...",
+    "inputPlaceholder": "输入你的问题...",
+    "inputHelp": "按 Enter 发送 • Shift+Enter 换行",
+    "errorGeneric": "抱歉，出错了，请稍后再试。"
   }
 }

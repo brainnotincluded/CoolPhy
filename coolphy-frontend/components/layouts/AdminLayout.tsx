@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 import { Button } from '@/components/ui/Button';
 import { 
   LayoutDashboard, 
@@ -25,16 +26,17 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigation = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Lectures', href: '/admin/lectures', icon: BookOpen },
-    { name: 'Tasks', href: '/admin/tasks', icon: CheckSquare },
-    { name: 'Topics', href: '/admin/topics', icon: Network },
-    { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Logs', href: '/admin/logs', icon: FileText },
+    { name: t('nav.dashboard'), href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: t('nav.lectures'), href: '/admin/lectures', icon: BookOpen },
+    { name: t('nav.tasks'), href: '/admin/tasks', icon: CheckSquare },
+    { name: t('nav.topics'), href: '/admin/topics', icon: Network },
+    { name: t('admin.users'), href: '/admin/users', icon: Users },
+    { name: t('admin.logs'), href: '/admin/logs', icon: FileText },
   ];
 
   const handleLogout = async () => {
@@ -85,7 +87,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent text-foreground/80 hover:text-foreground transition-colors"
               >
                 <Home className="w-5 h-5" />
-                <span>User View</span>
+                <span>{t('admin.userView')}</span>
               </Link>
             </div>
           </nav>
@@ -97,7 +99,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{user?.name}</p>
-                <p className="text-xs text-foreground/60">Administrator</p>
+                <p className="text-xs text-foreground/60">{t('admin.administrator')}</p>
               </div>
             </div>
           </div>
@@ -121,7 +123,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
-                Logout
+                {t('common.logout')}
               </Button>
             </div>
           </div>

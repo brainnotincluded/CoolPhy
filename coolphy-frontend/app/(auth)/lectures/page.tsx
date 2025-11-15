@@ -9,13 +9,21 @@ import { Loading } from '@/components/ui/Loading';
 import { lectureApi } from '@/lib/api/endpoints';
 import { Lecture } from '@/types';
 import { Search, BookOpen } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 
 export default function LecturesPage() {
+  const { t } = useTranslation();
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [filteredLectures, setFilteredLectures] = useState<Lecture[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
+
+  const getSubjectLabel = (subject: string) => {
+    const key = `subjects.${subject}`;
+    const translated = t(key);
+    return translated === key ? subject : translated;
+  };
 
   useEffect(() => {
     const fetchLectures = async () => {
@@ -57,8 +65,8 @@ export default function LecturesPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Lectures</h1>
-        <p className="text-foreground/70">Explore our comprehensive lecture library</p>
+        <h1 className="text-3xl font-bold mb-2">{t('lectures.title')}</h1>
+        <p className="text-foreground/70">{t('lectures.description')}</p>
       </div>
 
       {/* Filters */}
@@ -66,7 +74,7 @@ export default function LecturesPage() {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-foreground/60" />
           <Input
-            placeholder="Search lectures..."
+            placeholder={t('lectures.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -78,28 +86,28 @@ export default function LecturesPage() {
             className="cursor-pointer"
             onClick={() => setSelectedSubject('all')}
           >
-            All
+            {t('subjects.all')}
           </Badge>
           <Badge
             variant="math"
             className="cursor-pointer"
             onClick={() => setSelectedSubject('math')}
           >
-            Math
+            {t('subjects.math')}
           </Badge>
           <Badge
             variant="physics"
             className="cursor-pointer"
             onClick={() => setSelectedSubject('physics')}
           >
-            Physics
+            {t('subjects.physics')}
           </Badge>
           <Badge
             variant="cs"
             className="cursor-pointer"
             onClick={() => setSelectedSubject('cs')}
           >
-            CS
+            {t('subjects.cs')}
           </Badge>
         </div>
       </div>
@@ -112,7 +120,7 @@ export default function LecturesPage() {
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
                   <BookOpen className="w-5 h-5 text-primary" />
-                  <Badge variant={lecture.subject as any}>{lecture.subject}</Badge>
+                  <Badge variant={lecture.subject as any}>{getSubjectLabel(lecture.subject)}</Badge>
                 </div>
                 <CardTitle className="line-clamp-2">{lecture.title}</CardTitle>
                 <CardDescription className="line-clamp-3">{lecture.summary}</CardDescription>
@@ -120,7 +128,7 @@ export default function LecturesPage() {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   <Badge>{lecture.level}</Badge>
-                  <Badge variant="default">{lecture.view_count} views</Badge>
+                  <Badge variant="default">{lecture.view_count} {t('lectures.views')}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -130,7 +138,7 @@ export default function LecturesPage() {
 
       {filteredLectures.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-foreground/60">No lectures found. Try adjusting your filters.</p>
+          <p className="text-foreground/60">{t('lectures.noLectures')}</p>
         </div>
       )}
     </div>

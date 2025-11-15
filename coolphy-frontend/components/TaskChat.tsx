@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import { chatApi } from '@/lib/api/endpoints';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 
 interface Message {
   id: string;
@@ -21,12 +22,13 @@ interface TaskChatProps {
 }
 
 export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
       role: 'assistant',
-      content: `Hi! I'm your AI teacher. I'm here to help you with "${taskTitle}". Feel free to ask me questions about the problem, concepts, or if you need hints!`,
+      content: `${t('taskChat.greetingPrefix')} "${taskTitle}". ${t('taskChat.greetingSuffix')}`,
       timestamp: new Date(),
     },
   ]);
@@ -63,7 +65,7 @@ export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
       const assistantMessage: Message = {
         id: response.id?.toString() || (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.response || response.ai_reply || 'I apologize, but I encountered an error. Please try again.',
+        content: response.response || response.ai_reply || t('taskChat.errorGeneric'),
         timestamp: new Date(),
       };
 
@@ -73,7 +75,7 @@ export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: t('taskChat.errorGeneric'),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -102,20 +104,20 @@ export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
           isOpen ? 'translate-x-0 opacity-100' : 'translate-x-[450px] opacity-0 pointer-events-none'
         )}
       >
-        <Card className="h-full flex flex-col shadow-2xl border-2">
+        <Card className="h-full flex flex-col shadow-2xl border-2 bg-[#111827]">
           {/* Header */}
           <div className="p-4 border-b bg-card">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold">AI Teacher</h3>
+                <h3 className="font-semibold">{t('taskChat.title')}</h3>
               </div>
-              <span className="text-xs text-foreground/60">Ask for help</span>
+              <span className="text-xs text-foreground/60">{t('taskChat.subtitle')}</span>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#020617]">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -129,7 +131,7 @@ export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
                     'max-w-[85%] rounded-lg p-3 text-sm',
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground'
+                      : 'bg-[#252526] text-foreground border border-border'
                   )}
                 >
                   <p className="whitespace-pre-wrap break-words">{message.content}</p>
@@ -144,9 +146,9 @@ export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
             ))}
             {sending && (
               <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-lg p-3 text-sm bg-muted text-foreground flex items-center gap-2">
+                <div className="max-w-[85%] rounded-lg p-3 text-sm bg-[#252526] text-foreground border border-border flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Thinking...</span>
+                  <span>{t('taskChat.thinking')}</span>
                 </div>
               </div>
             )}
@@ -157,7 +159,7 @@ export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
           <div className="p-4 border-t bg-card">
             <div className="flex gap-2">
               <Input
-                placeholder="Ask a question..."
+                placeholder={t('taskChat.inputPlaceholder')}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -182,7 +184,7 @@ export function TaskChat({ taskId, taskTitle }: TaskChatProps) {
               </Button>
             </div>
             <p className="text-xs text-foreground/40 mt-2">
-              Press Enter to send • Shift+Enter for new line
+              {t('taskChat.inputHelp')}
             </p>
           </div>
         </Card>

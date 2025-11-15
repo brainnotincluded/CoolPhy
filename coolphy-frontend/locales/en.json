@@ -11,7 +11,8 @@
     "search": "Search",
     "logout": "Logout",
     "login": "Login",
-    "register": "Register"
+    "register": "Register",
+    "searchPlaceholder": "Search lectures, tasks, topics..."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -60,13 +61,59 @@
     "title": "Lectures",
     "description": "Explore our comprehensive lecture library",
     "views": "views",
-    "noLectures": "No lectures found. Try adjusting your filters."
+    "noLectures": "No lectures found. Try adjusting your filters.",
+    "searchPlaceholder": "Search lectures...",
+    "notFound": "Lecture not found",
+    "completeSuccess": "Lecture marked as completed!",
+    "completeError": "Failed to mark as completed",
+    "addNoteError": "Failed to add note",
+    "videoLecture": "Video Lecture",
+    "contentTitle": "Lecture Content",
+    "notesTitle": "My Notes",
+    "showNotes": "Show Notes",
+    "hideNotes": "Hide Notes",
+    "addNotePlaceholder": "Add a note...",
+    "addNoteButton": "Add",
+    "noNotesYet": "No notes yet. Add your first note above!",
+    "relatedTasksTitle": "Practice with Related Tasks",
+    "relatedTasksDescription": "Apply what you've learned",
+    "viewTasksForPrefix": "View Tasks for",
+    "marking": "Marking...",
+    "markAsCompleted": "Mark as Completed",
+    "videoUnsupported": "Your browser does not support the video tag.",
+    "backToList": "Back to Lectures"
   },
   "tasks": {
     "title": "Tasks",
     "description": "Challenge yourself with practice problems",
     "points": "pts",
-    "noTasks": "No tasks found. Try adjusting your filters."
+    "noTasks": "No tasks found. Try adjusting your filters.",
+    "searchPlaceholder": "Search tasks...",
+    "notFound": "Task not found",
+    "backToList": "Back to Tasks",
+    "problem": "Problem",
+    "hint": "Hint",
+    "showHint": "Show Hint",
+    "hideHint": "Hide Hint",
+    "yourAnswer": "Your Answer",
+    "answerDescription": "Submit your solution to receive AI feedback",
+    "answerPlaceholder": "Enter your answer...",
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "correctTitle": "Correct! 🎉",
+    "incorrectTitle": "Not quite right",
+    "pointsEarned": "points earned!",
+    "solution": "Solution",
+    "showSolution": "Show Solution",
+    "hideSolution": "Hide Solution",
+    "taskCompletedTitle": "Task Completed!",
+    "taskCompletedDescription": "Great job! You've successfully solved this task and earned",
+    "tryMorePrefix": "Try More",
+    "needHelpTitle": "Need Help?",
+    "needHelpDescription": "Review related lectures or use the AI Teacher chat (bottom right)",
+    "viewLecturesPrefix": "View",
+    "alertEnterAnswer": "Please enter an answer",
+    "alertSubmitFailed": "Failed to submit answer"
   },
   "dashboard": {
     "welcome": "Welcome back",
@@ -86,7 +133,12 @@
     "recentLectures": "Recent Lectures",
     "recommendedTasks": "Recommended Tasks",
     "continueWhereYouLeftOff": "Continue where you left off",
-    "basedOnYourProgress": "Based on your progress"
+    "basedOnYourProgress": "Based on your progress",
+    "level": "Level",
+    "beginner": "Beginner",
+    "quickActionsDescription": "Jump right into learning",
+    "noLecturesYet": "No lectures yet. Start exploring!",
+    "noTasksYet": "No tasks yet. Start solving!"
   },
   "subjects": {
     "math": "Math",
@@ -98,5 +150,21 @@
     "en": "English",
     "ru": "Русский",
     "zh": "中文"
+  },
+  "admin": {
+    "users": "Users",
+    "logs": "Logs",
+    "userView": "User View",
+    "administrator": "Administrator"
+  },
+  "taskChat": {
+    "title": "AI Teacher",
+    "subtitle": "Ask for help",
+    "greetingPrefix": "Hi! I'm your AI teacher. I'm here to help you with",
+    "greetingSuffix": "Feel free to ask me questions about the problem, concepts, or if you need hints!",
+    "thinking": "Thinking...",
+    "inputPlaceholder": "Ask a question...",
+    "inputHelp": "Press Enter to send • Shift+Enter for new line",
+    "errorGeneric": "I apologize, but I encountered an error. Please try again."
   }
 }

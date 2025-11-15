@@ -13,10 +13,12 @@ import { taskApi } from '@/lib/api/endpoints';
 import { Task, SolutionAttempt } from '@/types';
 import { ArrowLeft, Send, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
 import { TaskChat } from '@/components/TaskChat';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const id = parseInt(params.id as string);
   
   const [task, setTask] = useState<Task | null>(null);
@@ -44,7 +46,7 @@ export default function TaskDetailPage() {
 
   const handleSubmit = async () => {
     if (!answer.trim()) {
-      alert('Please enter an answer');
+      alert(t('tasks.alertEnterAnswer'));
       return;
     }
 
@@ -58,7 +60,7 @@ export default function TaskDetailPage() {
       }
     } catch (error: any) {
       console.error('Failed to submit answer:', error);
-      alert(error.response?.data?.error || 'Failed to submit answer');
+      alert(error.response?.data?.error || t('tasks.alertSubmitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -72,10 +74,10 @@ export default function TaskDetailPage() {
     return (
       <div className="p-6">
         <div className="text-center py-12">
-          <p className="text-foreground/60">Task not found</p>
+          <p className="text-foreground/60">{t('tasks.notFound')}</p>
           <Link href="/tasks">
             <Button variant="outline" className="mt-4">
-              Back to Tasks
+              {t('tasks.backToList')}
             </Button>
           </Link>
         </div>
@@ -89,10 +91,10 @@ export default function TaskDetailPage() {
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.back()}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {t('common.back')}
         </Button>
         <div className="flex gap-2">
-          <Badge variant={task.subject as any}>{task.subject}</Badge>
+          <Badge variant={task.subject as any}>{t(`subjects.${task.subject}`)}</Badge>
           <Badge>{task.level}</Badge>
           <Badge variant="outline">{task.type}</Badge>
         </div>
@@ -105,14 +107,14 @@ export default function TaskDetailPage() {
           {task.tags.map((tag, idx) => (
             <Badge key={idx} variant="outline">{tag}</Badge>
           ))}
-          <Badge>+{task.points} points</Badge>
+          <Badge>+{task.points} {t('tasks.points')}</Badge>
         </div>
       </div>
 
       {/* Problem Statement */}
       <Card>
         <CardHeader>
-          <CardTitle>Problem</CardTitle>
+          <CardTitle>{t('tasks.problem')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="prose prose-invert max-w-none">
@@ -126,14 +128,14 @@ export default function TaskDetailPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Hint</CardTitle>
+              <CardTitle>{t('tasks.hint')}</CardTitle>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowHint(!showHint)}
               >
                 {showHint ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                {showHint ? 'Hide' : 'Show'} Hint
+                {showHint ? t('tasks.hideHint') : t('tasks.showHint')}
               </Button>
             </div>
           </CardHeader>
@@ -151,13 +153,13 @@ export default function TaskDetailPage() {
       {!attempt?.is_correct && (
         <Card>
           <CardHeader>
-            <CardTitle>Your Answer</CardTitle>
-            <CardDescription>Submit your solution to receive AI feedback</CardDescription>
+            <CardTitle>{t('tasks.yourAnswer')}</CardTitle>
+            <CardDescription>{t('tasks.answerDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
               <Input
-                placeholder="Enter your answer..."
+                placeholder={t('tasks.answerPlaceholder')}
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
@@ -165,7 +167,7 @@ export default function TaskDetailPage() {
               />
               <Button onClick={handleSubmit} disabled={submitting}>
                 <Send className="w-4 h-4 mr-2" />
-                {submitting ? 'Submitting...' : 'Submit'}
+                {submitting ? t('tasks.submitting') : t('tasks.submit')}
               </Button>
             </div>
             {attempt && (
@@ -178,14 +180,14 @@ export default function TaskDetailPage() {
                   )}
                   <div className="flex-1">
                     <h3 className="font-semibold mb-2">
-                      {attempt.is_correct ? 'Correct! 🎉' : 'Not quite right'}
+                      {attempt.is_correct ? t('tasks.correctTitle') : t('tasks.incorrectTitle')}
                     </h3>
                     <div className="text-sm text-foreground/80">
                       <LatexRenderer content={attempt.feedback} />
                     </div>
                     {attempt.is_correct && (
                       <p className="text-sm text-green-500 mt-2">
-                        +{attempt.score} points earned!
+                        +{attempt.score} {t('tasks.pointsEarned')}
                       </p>
                     )}
                   </div>
@@ -201,7 +203,7 @@ export default function TaskDetailPage() {
         <Card className="border-primary/50">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-primary">Solution</CardTitle>
+              <CardTitle className="text-primary">{t('tasks.solution')}</CardTitle>
               {!attempt?.is_correct && (
                 <Button
                   variant="ghost"
@@ -209,7 +211,7 @@ export default function TaskDetailPage() {
                   onClick={() => setShowSolution(!showSolution)}
                 >
                   {showSolution ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  {showSolution ? 'Hide' : 'Show'} Solution
+                  {showSolution ? t('tasks.hideSolution') : t('tasks.showSolution')}
                 </Button>
               )}
             </div>
@@ -228,16 +230,16 @@ export default function TaskDetailPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <CardTitle>Task Completed!</CardTitle>
+              <CardTitle>{t('tasks.taskCompletedTitle')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-foreground/80">
-              Great job! You've successfully solved this task and earned {attempt.score} points.
+              {t('tasks.taskCompletedDescription')} {attempt.score} {t('tasks.points')}
             </p>
             <Link href={`/tasks?subject=${task.subject}`}>
               <Button variant="outline" className="w-full">
-                Try More {task.subject} Tasks
+                {t('tasks.tryMorePrefix')} {t(`subjects.${task.subject}`)} {t('tasks.title')}
               </Button>
             </Link>
           </CardContent>
@@ -247,13 +249,13 @@ export default function TaskDetailPage() {
       {/* Related Lectures */}
       <Card>
         <CardHeader>
-          <CardTitle>Need Help?</CardTitle>
-          <CardDescription>Review related lectures or use the AI Teacher chat (bottom right)</CardDescription>
+          <CardTitle>{t('tasks.needHelpTitle')}</CardTitle>
+          <CardDescription>{t('tasks.needHelpDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <Link href={`/lectures?subject=${task.subject}`}>
             <Button variant="outline" className="w-full">
-              View {task.subject} Lectures
+              {t('tasks.viewLecturesPrefix')} {t(`subjects.${task.subject}`)} {t('lectures.title')}
             </Button>
           </Link>
         </CardContent>

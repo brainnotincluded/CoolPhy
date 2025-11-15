@@ -12,10 +12,12 @@ import { Input } from '@/components/ui/Input';
 import { lectureApi } from '@/lib/api/endpoints';
 import { Lecture, Note } from '@/types';
 import { BookOpen, CheckCircle2, ArrowLeft, StickyNote } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 
 export default function LectureDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const id = parseInt(params.id as string);
   
   const [lecture, setLecture] = useState<Lecture | null>(null);
@@ -53,10 +55,10 @@ export default function LectureDetailPage() {
     setCompleting(true);
     try {
       await lectureApi.complete(id);
-      alert('Lecture marked as completed!');
+      alert(t('lectures.completeSuccess'));
     } catch (error) {
       console.error('Failed to mark as complete:', error);
-      alert('Failed to mark as completed');
+      alert(t('lectures.completeError'));
     } finally {
       setCompleting(false);
     }
@@ -72,7 +74,7 @@ export default function LectureDetailPage() {
       setNewNote('');
     } catch (error) {
       console.error('Failed to add note:', error);
-      alert('Failed to add note');
+      alert(t('lectures.addNoteError'));
     } finally {
       setAddingNote(false);
     }
@@ -86,10 +88,10 @@ export default function LectureDetailPage() {
     return (
       <div className="p-6">
         <div className="text-center py-12">
-          <p className="text-foreground/60">Lecture not found</p>
+          <p className="text-foreground/60">{t('lectures.notFound')}</p>
           <Link href="/lectures">
             <Button variant="outline" className="mt-4">
-              Back to Lectures
+              {t('lectures.backToList')}
             </Button>
           </Link>
         </div>
@@ -103,11 +105,11 @@ export default function LectureDetailPage() {
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.back()}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {t('common.back')}
         </Button>
         <Button onClick={handleComplete} disabled={completing}>
           <CheckCircle2 className="w-4 h-4 mr-2" />
-          {completing ? 'Marking...' : 'Mark as Completed'}
+          {completing ? t('lectures.marking') : t('lectures.markAsCompleted')}
         </Button>
       </div>
 
@@ -115,7 +117,7 @@ export default function LectureDetailPage() {
       <div>
         <div className="flex items-center gap-2 mb-4">
           <BookOpen className="w-6 h-6 text-primary" />
-          <Badge variant={lecture.subject as any}>{lecture.subject}</Badge>
+          <Badge variant={lecture.subject as any}>{t(`subjects.${lecture.subject}`)}</Badge>
           <Badge>{lecture.level}</Badge>
         </div>
         <h1 className="text-4xl font-bold mb-2">{lecture.title}</h1>
@@ -131,7 +133,7 @@ export default function LectureDetailPage() {
       {(lecture.video_url || lecture.video_asset) && (
         <Card>
           <CardHeader>
-            <CardTitle>Video Lecture</CardTitle>
+            <CardTitle>{t('lectures.videoLecture')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="aspect-video bg-background rounded-lg overflow-hidden border">
@@ -140,7 +142,7 @@ export default function LectureDetailPage() {
                 className="w-full h-full"
                 src={lecture.video_asset?.url || lecture.video_url}
               >
-                Your browser does not support the video tag.
+                {t('lectures.videoUnsupported')}
               </video>
             </div>
           </CardContent>
@@ -150,7 +152,7 @@ export default function LectureDetailPage() {
       {/* Lecture Content */}
       <Card>
         <CardHeader>
-          <CardTitle>Lecture Content</CardTitle>
+          <CardTitle>{t('lectures.contentTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="prose prose-invert max-w-none">
@@ -165,14 +167,14 @@ export default function LectureDetailPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <StickyNote className="w-5 h-5" />
-              <CardTitle>My Notes</CardTitle>
+              <CardTitle>{t('lectures.notesTitle')}</CardTitle>
             </div>
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => setShowNotes(!showNotes)}
             >
-              {showNotes ? 'Hide' : 'Show'} Notes ({notes.length})
+              {showNotes ? t('lectures.hideNotes') : t('lectures.showNotes')} ({notes.length})
             </Button>
           </div>
         </CardHeader>
@@ -180,13 +182,13 @@ export default function LectureDetailPage() {
           <CardContent className="space-y-4">
             <div className="flex gap-2">
               <Input
-                placeholder="Add a note..."
+                placeholder={t('lectures.addNotePlaceholder')}
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
               />
               <Button onClick={handleAddNote} disabled={addingNote}>
-                Add
+                {t('lectures.addNoteButton')}
               </Button>
             </div>
             <div className="space-y-2">
@@ -200,7 +202,7 @@ export default function LectureDetailPage() {
               ))}
               {notes.length === 0 && (
                 <p className="text-sm text-foreground/60 text-center py-4">
-                  No notes yet. Add your first note above!
+                  {t('lectures.noNotesYet')}
                 </p>
               )}
             </div>
@@ -211,13 +213,13 @@ export default function LectureDetailPage() {
       {/* Related Tasks */}
       <Card>
         <CardHeader>
-          <CardTitle>Practice with Related Tasks</CardTitle>
-          <CardDescription>Apply what you've learned</CardDescription>
+          <CardTitle>{t('lectures.relatedTasksTitle')}</CardTitle>
+          <CardDescription>{t('lectures.relatedTasksDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Link href={`/tasks?subject=${lecture.subject}`}>
             <Button variant="outline" className="w-full">
-              View Tasks for {lecture.subject}
+              {t('lectures.viewTasksForPrefix')} {t(`subjects.${lecture.subject}`)}
             </Button>
           </Link>
         </CardContent>
