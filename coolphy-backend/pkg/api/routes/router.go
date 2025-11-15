@@ -26,6 +26,7 @@ func Register(r *gin.Engine, cfg config.Config) {
 		api.POST("/auth/login", handlers.LoginHandler(cfg))
 		api.POST("/auth/logout", handlers.Logout())
 		api.POST("/password/reset", handlers.PasswordReset())
+		api.POST("/password/reset/confirm", handlers.PasswordResetConfirm())
 		api.GET("/ping", handlers.Ping())
 
 		api.GET("/lectures", handlers.ListLectures())

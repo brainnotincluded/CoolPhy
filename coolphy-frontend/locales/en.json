@@ -146,6 +146,26 @@
     "cs": "CS",
     "all": "All"
   },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "Enter your email",
+    "passwordPlaceholder": "Enter your password",
+    "forgotPassword": "Forgot Password?",
+    "forgotPasswordDesc": "Enter your email and we'll send you a link to reset your password",
+    "sendResetLink": "Send Reset Link",
+    "resetEmailSent": "If an account exists with that email, you'll receive a password reset link shortly.",
+    "backToLogin": "Back to Login",
+    "resetPassword": "Reset Password",
+    "resetPasswordDesc": "Enter your new password below",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter new password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Confirm new password",
+    "resetPasswordButton": "Reset Password",
+    "passwordResetSuccess": "Password reset successfully! You can now log in with your new password.",
+    "redirectingToLogin": "Redirecting to login page..."
+  },
   "languages": {
     "en": "English",
     "ru": "Русский",

@@ -146,6 +146,26 @@
     "cs": "Информатика",
     "all": "Все"
   },
+  "auth": {
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "emailPlaceholder": "Введите электронную почту",
+    "passwordPlaceholder": "Введите пароль",
+    "forgotPassword": "Забыли пароль?",
+    "forgotPasswordDesc": "Введите свой email, и мы отправим вам ссылку для сброса пароля",
+    "sendResetLink": "Отправить ссылку",
+    "resetEmailSent": "Если аккаунт с таким email существует, вы скоро получите ссылку для сброса пароля.",
+    "backToLogin": "Назад ко входу",
+    "resetPassword": "Сбросить пароль",
+    "resetPasswordDesc": "Введите новый пароль ниже",
+    "newPassword": "Новый пароль",
+    "newPasswordPlaceholder": "Введите новый пароль",
+    "confirmPassword": "Подтвердите пароль",
+    "confirmPasswordPlaceholder": "Подтвердите новый пароль",
+    "resetPasswordButton": "Сбросить пароль",
+    "passwordResetSuccess": "Пароль успешно сброшен! Теперь вы можете войти с новым паролем.",
+    "redirectingToLogin": "Перенаправляем на страницу входа..."
+  },
   "languages": {
     "en": "English",
     "ru": "Русский",
