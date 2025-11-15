@@ -45,8 +45,7 @@ export default function TaskDetailPage() {
         setTask(data);
         setMessages([{
           role: 'assistant',
-          content: `Hi! I'm your AI teacher. I'm here to help you with 
-**${data.title}**. Ask questions, request hints, and when ready, say "Final answer: ..." and I'll evaluate it and award points.`,
+          content: `Hi! I'm your AI tutor for **${data.title}**. I'll guide you through the problem and evaluate your answer when you're ready. Just work through it naturally, and I'll know when to grade your solution!`,
           timestamp: new Date()
         }]);
       } catch (error) {
@@ -75,34 +74,8 @@ export default function TaskDetailPage() {
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-
-    // If user provided a final answer, evaluate via existing solve endpoint
-    const finalAnswerMatch = text.match(/^(final answer|ответ)\s*[:=-]?\s*(.+)$/i);
-    if (finalAnswerMatch) {
-      const answerText = finalAnswerMatch[2];
-      try {
-        const result = await taskApi.solve(id, answerText);
-        const feedback: ChatMessage = {
-          role: 'assistant',
-          content: result.is_correct
-            ? `✅ ${t('tasks.correctTitle')} +${result.score} ${t('tasks.pointsEarned')}`
-            : `❌ ${t('tasks.incorrectTitle')}\n\n${result.feedback || ''}`,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, feedback]);
-        if (result.is_correct) {
-          setIsCompleted(true);
-          setEarnedPoints(result.score || 0);
-          setShowSolution(true);
-        }
-      } catch (err: any) {
-        setMessages(prev => [...prev, { role: 'assistant', content: t('tasks.alertSubmitFailed'), timestamp: new Date() }]);
-      }
-      return;
-    }
-
-    // Otherwise, send to AI task chat
     setSending(true);
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081'}/api/v1/task-chat`, {
         method: 'POST',
@@ -116,6 +89,15 @@ export default function TaskDetailPage() {
       const data = await response.json();
       const aiMessage: ChatMessage = { role: 'assistant', content: data.ai_reply || '...', timestamp: new Date() };
       setMessages(prev => [...prev, aiMessage]);
+      
+      // Check if AI triggered evaluation
+      if (data.evaluation) {
+        if (data.evaluation.is_correct) {
+          setIsCompleted(true);
+          setEarnedPoints(task?.points || 0);
+          setShowSolution(true);
+        }
+      }
     } catch (e) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.', timestamp: new Date() }]);
     } finally {
@@ -216,8 +198,8 @@ export default function TaskDetailPage() {
       {/* Conversational AI Chat */}
       <Card className="border-primary/50">
         <CardHeader>
-          <CardTitle className="text-primary">AI Teacher</CardTitle>
-          <CardDescription>Chat about the problem. Say "Final answer: ..." when ready.</CardDescription>
+          <CardTitle className="text-primary">AI Tutor</CardTitle>
+          <CardDescription>Get help solving the problem. The AI will automatically evaluate your answer when you provide it.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4 max-h-[50vh] overflow-y-auto p-2 bg-slate-900/40 rounded-md border border-slate-800">
@@ -238,7 +220,7 @@ export default function TaskDetailPage() {
           </div>
           <div className="flex gap-2 mt-4">
             <Input
-              placeholder="Type a message... (e.g., Final answer: ... )"
+              placeholder="Ask questions or provide your answer..."
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSendMessage()}

@@ -232,13 +232,31 @@ func TaskChatWithAI() gin.HandlerFunc {
 			return
 		}
 
-		// Build task context (only for current task)
+		// Build task context with solution for evaluation
 		contextInfo := ""
+		var currentTask *models.Task
 		if p.ContextType == "task" && p.ContextID != nil {
 			var task models.Task
 			if err := db.Get().First(&task, *p.ContextID).Error; err == nil {
-				contextInfo = fmt.Sprintf("\n\n**Current Task:**\nTitle: %s\nDescription:\n%s\n\n(Solution is hidden from you - guide the student to discover it themselves)",
-					task.Title, task.DescriptionLaTeX)
+				currentTask = &task
+				contextInfo = fmt.Sprintf(`
+
+**Current Task:**
+Title: %s
+Description:
+%s
+
+**Correct Solution (for your reference only):**
+%s
+
+**Your Role:**
+- Guide the student with hints and questions
+- When the student provides what seems to be a final answer, evaluate it against the correct solution
+- If correct, respond with JSON: {"action":"evaluate","answer":"student's answer","is_correct":true,"feedback":"positive feedback"}
+- If incorrect but close, provide hints
+- If they're stuck, break down the problem into steps
+- Use LaTeX for math and TikZ for diagrams`,
+					task.Title, task.DescriptionLaTeX, task.SolutionLaTeX)
 			}
 		}
 
@@ -275,6 +293,54 @@ func TaskChatWithAI() gin.HandlerFunc {
 			return
 		}
 
+		// Check if AI decided to evaluate the answer
+		type EvalDecision struct {
+			Action    string `json:"action"`
+			Answer    string `json:"answer"`
+			IsCorrect bool   `json:"is_correct"`
+			Feedback  string `json:"feedback"`
+		}
+		var evalDecision EvalDecision
+		evaluationTriggered := false
+		
+		// Try to parse JSON evaluation decision from AI response
+		if err := json.Unmarshal([]byte(aiReply), &evalDecision); err == nil && evalDecision.Action == "evaluate" {
+			evaluationTriggered = true
+			// AI decided to evaluate - create solution attempt
+			if currentTask != nil {
+				status := "incorrect"
+				pointsAwarded := 0
+				if evalDecision.IsCorrect {
+					status = "correct"
+					pointsAwarded = currentTask.Points
+					// Award points to user
+					var user models.User
+					if err := db.Get().First(&user, userID).Error; err == nil {
+						user.Points += currentTask.Points
+						db.Get().Save(&user)
+					}
+				}
+				
+				// Create solution attempt record
+				attempt := models.SolutionAttempt{
+					UserID:        userID.(uint),
+					TaskID:        currentTask.ID,
+					Answer:        evalDecision.Answer,
+					Status:        status,
+					PointsAwarded: pointsAwarded,
+					AIFeedback:    evalDecision.Feedback,
+				}
+				db.Get().Create(&attempt)
+				
+				// Replace AI response with user-friendly message
+				if evalDecision.IsCorrect {
+					aiReply = fmt.Sprintf("✅ **Correct!** +%d points\n\n%s", pointsAwarded, evalDecision.Feedback)
+				} else {
+					aiReply = fmt.Sprintf("❌ **Not quite right**\n\n%s", evalDecision.Feedback)
+				}
+			}
+		}
+
 		// Save to database
 		msg := models.ChatMessage{
 			UserID:      userID.(uint),
@@ -289,7 +355,14 @@ func TaskChatWithAI() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{"ai_reply": aiReply})
+		response := gin.H{"ai_reply": aiReply}
+		if evaluationTriggered {
+			response["evaluation"] = gin.H{
+				"is_correct": evalDecision.IsCorrect,
+				"score":      evalDecision.IsCorrect && currentTask != nil,
+			}
+		}
+		c.JSON(http.StatusCreated, response)
 	}
 }
 
