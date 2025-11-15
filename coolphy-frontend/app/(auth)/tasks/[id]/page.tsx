@@ -43,6 +43,36 @@ export default function TaskDetailPage() {
       try {
         const data = await taskApi.get(id);
         setTask(data);
+        
+        // Load chat history for this task
+        try {
+          const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081/api/v1';
+          const historyResponse = await fetch(`${API_BASE}/professor-chat/history?context_type=task&context_id=${id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+            },
+          });
+          
+          if (historyResponse.ok) {
+            const history = await historyResponse.json();
+            if (history && history.length > 0) {
+              // Convert history to chat messages
+              const loadedMessages: ChatMessage[] = [];
+              history.forEach((msg: any) => {
+                loadedMessages.push(
+                  { role: 'user', content: msg.user_message, timestamp: new Date(msg.timestamp) },
+                  { role: 'assistant', content: msg.ai_reply, timestamp: new Date(msg.timestamp) }
+                );
+              });
+              setMessages(loadedMessages);
+              return; // Don't add greeting if history exists
+            }
+          }
+        } catch (err) {
+          console.log('No chat history or error loading:', err);
+        }
+        
+        // Default greeting if no history
         setMessages([{
           role: 'assistant',
           content: `Hi! I'm your AI tutor for **${data.title}**. I'll guide you through the problem and evaluate your answer when you're ready. Just work through it naturally, and I'll know when to grade your solution!`,
@@ -77,7 +107,8 @@ export default function TaskDetailPage() {
     setSending(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081'}/api/v1/task-chat`, {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081/api/v1';
+      const response = await fetch(`${API_BASE}/task-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
