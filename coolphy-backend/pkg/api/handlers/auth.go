@@ -959,12 +959,6 @@ func MarkNotificationRead() gin.HandlerFunc {
 
 // AI Professor Chat
 
-type chatPayload struct {
-	Message     string `json:"message" binding:"required"`
-	ContextType string `json:"context_type"` // lecture, task, topic, general
-	ContextID   *uint  `json:"context_id"`
-}
-
 // ProfessorChat godoc
 // @Summary      Ask AI professor
 // @Description  Submit question to AI professor (placeholder - integrate LLM later)
@@ -1364,7 +1358,7 @@ func PasswordResetConfirm() gin.HandlerFunc {
 		}
 
 		// Update password
-		user.Password = string(hashed)
+		user.PasswordHash = string(hashed)
 		if err := db.Get().Save(&user).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
 			return
