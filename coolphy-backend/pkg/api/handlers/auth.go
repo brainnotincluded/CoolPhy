@@ -221,11 +221,48 @@ func ProfileStats() gin.HandlerFunc {
 		db.Get().Model(&models.SolutionAttempt{}).Where("user_id = ? AND status = ?", uid, "correct").Count(&solvedCount)
 		var totalAttempts int64
 		db.Get().Model(&models.SolutionAttempt{}).Where("user_id = ?", uid).Count(&totalAttempts)
+		
+		// Get subject-specific performance
+		type SubjectPerformance struct {
+			Subject        string `json:"subject"`
+			Correct        int64  `json:"correct"`
+			Total          int64  `json:"total"`
+			PointsEarned   int    `json:"points_earned"`
+			SuccessRate    float64 `json:"success_rate"`
+		}
+		var subjectPerf []SubjectPerformance
+		
+		rows, err := db.Get().Raw(`
+			SELECT 
+				t.subject,
+				COUNT(CASE WHEN sa.status = 'correct' THEN 1 END) as correct,
+				COUNT(*) as total,
+				COALESCE(SUM(sa.points_awarded), 0) as points_earned
+			FROM solution_attempts sa
+			JOIN tasks t ON sa.task_id = t.id
+			WHERE sa.user_id = ?
+			GROUP BY t.subject
+		`, uid).Rows()
+		
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var sp SubjectPerformance
+				if err := rows.Scan(&sp.Subject, &sp.Correct, &sp.Total, &sp.PointsEarned); err == nil {
+					if sp.Total > 0 {
+						sp.SuccessRate = float64(sp.Correct) / float64(sp.Total) * 100
+					}
+					subjectPerf = append(subjectPerf, sp)
+				}
+			}
+		}
+		
 		c.JSON(http.StatusOK, gin.H{
-			"points":         u.Points,
-			"solved_count":   solvedCount,
-			"total_attempts": totalAttempts,
-			"subjects":       u.Subjects,
+			"points":              u.Points,
+			"solved_count":        solvedCount,
+			"total_attempts":      totalAttempts,
+			"subjects":            u.Subjects,
+			"subject_performance": subjectPerf,
 		})
 	}
 }
