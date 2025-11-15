@@ -65,6 +65,7 @@ func Register(r *gin.Engine, cfg config.Config) {
 			auth.PUT("/notifications/:id/read", handlers.MarkNotificationRead())
 			// Professor Chat (with AI)
 			auth.POST("/professor-chat", handlers.ProfessorChatWithAI())
+			auth.POST("/task-chat", handlers.TaskChatWithAI())
 			auth.GET("/professor-chat/history", handlers.ChatHistory())
 			auth.GET("/professor-chat/:id", handlers.GetChatMessage())
 			// Achievements

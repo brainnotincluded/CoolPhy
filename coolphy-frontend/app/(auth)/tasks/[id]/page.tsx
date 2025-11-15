@@ -101,10 +101,10 @@ export default function TaskDetailPage() {
       return;
     }
 
-    // Otherwise, send to AI professor chat
+    // Otherwise, send to AI task chat
     setSending(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081'}/api/v1/professor-chat`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081'}/api/v1/task-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -286,20 +286,6 @@ export default function TaskDetailPage() {
         </Card>
       )}
 
-      {/* Continue Learning */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('tasks.needHelpTitle')}</CardTitle>
-          <CardDescription>{t('tasks.needHelpDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Link href={`/lectures?subject=${task.subject}`}>
-            <Button variant="outline" className="w-full">
-              {t('tasks.viewLecturesPrefix')} {t(`subjects.${task.subject}`)} {t('lectures.title')}
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
     </div>
   );
 }

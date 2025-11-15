@@ -40,7 +40,7 @@ export function LatexRenderer({ content, className = '', displayMode = false }: 
   <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
   <script src="https://tikzjax.com/v1/tikzjax.js"></script>
   <style>
-    body { margin:0; padding:20px; display:flex; justify-content:center; align-items:center; min-height:100vh; background:transparent; }
+    body { margin:0; padding:0; display:flex; justify-content:center; align-items:center; min-height:100vh; background:transparent; }
     svg { max-width:100%; height:auto; }
   </style>
 </head>
@@ -51,7 +51,7 @@ export function LatexRenderer({ content, className = '', displayMode = false }: 
 </body>
 </html>`;
           const encoded = encodeURIComponent(iframeHtml);
-          return `<div style="text-align:center;margin:20px 0;"><iframe id="${id}" style="border:none;width:100%;min-height:300px;" src="data:text/html;charset=utf-8,${encoded}" onload="this.style.height=this.contentWindow.document.body.scrollHeight+'px'"></iframe></div>`;
+          return `<div style="display:inline-block;background:white;border-radius:12px;padding:20px;margin:20px 0;width:250px;height:250px;overflow:hidden;"><iframe id="${id}" style="border:none;width:100%;height:100%;" src="data:text/html;charset=utf-8,${encoded}"></iframe></div>`;
         }
       );
 
