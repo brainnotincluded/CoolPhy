@@ -658,7 +658,7 @@ type solvePayload struct {
 // @Produce      json
 // @Param        id       path      int           true  "Task ID"
 // @Param        payload  body      solvePayload  true  "Solution"
-// @Success      201      {object}  models.SolutionAttempt
+// @Success      201      {object}  map[string]interface{}
 // @Router       /tasks/{id}/solve [post]
 func SolveTask() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -679,19 +679,86 @@ func SolveTask() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
 			return
 		}
+		
+		// Evaluate answer using AI
+		isCorrect := false
+		feedback := "Your answer has been submitted."
+		pointsAwarded := 0
+		status := "incorrect"
+		
+		// Get AI settings
+		settings, err := getOrCreateSettings()
+		if err == nil && settings.OpenRouterAPIKey != "" {
+			// Use AI to evaluate
+			prompt := fmt.Sprintf(`You are evaluating a student's answer to a physics/math problem.
+
+Problem: %s
+
+Correct Solution: %s
+
+Student's Answer: %s
+
+Evaluate if the student's answer is correct. Respond in JSON format:
+{
+  "is_correct": true/false,
+  "feedback": "brief explanation",
+  "score_percentage": 0-100
+}`, task.DescriptionLaTeX, task.SolutionLaTeX, p.Answer)
+			
+			client := utils.NewOpenRouterClient(settings.OpenRouterAPIKey, settings.PrimaryModel, settings.FallbackModel)
+			messages := []utils.OpenRouterMessage{
+				{Role: "system", Content: "You are an expert teacher evaluating student work. Be fair but strict."},
+				{Role: "user", Content: prompt},
+			}
+			
+			aiResponse, err := client.Chat(messages)
+			if err == nil {
+				// Parse AI response
+				var evalResult struct {
+					IsCorrect       bool   `json:"is_correct"`
+					Feedback        string `json:"feedback"`
+					ScorePercentage int    `json:"score_percentage"`
+				}
+				if err := json.Unmarshal([]byte(aiResponse), &evalResult); err == nil {
+					isCorrect = evalResult.IsCorrect
+					feedback = evalResult.Feedback
+					if isCorrect {
+						status = "correct"
+						pointsAwarded = task.Points
+						// Award points to user
+						var user models.User
+						if err := db.Get().First(&user, userID).Error; err == nil {
+							user.Points += task.Points
+							db.Get().Save(&user)
+						}
+					}
+				}
+			}
+		}
+		
 		attempt := models.SolutionAttempt{
-			UserID:       userID.(uint),
-			TaskID:       task.ID,
-			Answer:       p.Answer,
-			SolutionText: p.SolutionText,
-			TimeSpent:    p.TimeSpent,
-			Status:       "pending",
+			UserID:        userID.(uint),
+			TaskID:        task.ID,
+			Answer:        p.Answer,
+			SolutionText:  p.SolutionText,
+			TimeSpent:     p.TimeSpent,
+			Status:        status,
+			PointsAwarded: pointsAwarded,
+			AIFeedback:    feedback,
 		}
 		if err := db.Get().Create(&attempt).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "create failed"})
 			return
 		}
-		c.JSON(http.StatusCreated, attempt)
+		
+		// Return response in format expected by frontend
+		c.JSON(http.StatusCreated, gin.H{
+			"id":         attempt.ID,
+			"is_correct": isCorrect,
+			"score":      pointsAwarded,
+			"feedback":   feedback,
+			"status":     status,
+		})
 	}
 }
 
