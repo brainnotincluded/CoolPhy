@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -135,8 +136,5 @@ func (c *OpenRouterClient) isInsufficientCreditsError(err error) bool {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && 
-	       (s == substr || len(s) > len(substr) && 
-	       ([]byte(s)[0:len(substr)] == []byte(substr)[0:len(substr)] ||
-	        bytes.Contains([]byte(s), []byte(substr))))
+	return strings.Contains(s, substr)
 }
