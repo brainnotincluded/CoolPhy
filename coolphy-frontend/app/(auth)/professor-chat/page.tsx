@@ -1,63 +1,108 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
 import { LatexRenderer } from '@/components/ui/LatexRenderer';
-import { chatApi } from '@/lib/api/endpoints';
-import { ChatMessage } from '@/types';
-import { Send, Bot, User } from 'lucide-react';
+import { Send } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n/I18nContext';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
 
 export default function ProfessorChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { t } = useTranslation();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState('');
+  const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const loadHistory = async () => {
       try {
-        const data = await chatApi.getHistory();
-        setMessages(data);
-      } catch (error) {
-        console.error('Failed to fetch chat history:', error);
-      } finally {
-        setLoading(false);
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081/api/v1';
+        const response = await fetch(`${API_BASE}/professor-chat/history`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          },
+        });
+        
+        if (response.ok) {
+          const history = await response.json();
+          if (history && history.length > 0) {
+            const loadedMessages: Message[] = [];
+            history.forEach((msg: any) => {
+              loadedMessages.push(
+                { role: 'user', content: msg.user_message, timestamp: new Date(msg.timestamp) },
+                { role: 'assistant', content: msg.ai_reply, timestamp: new Date(msg.timestamp) }
+              );
+            });
+            setMessages(loadedMessages);
+            return;
+          }
+        }
+      } catch (err) {
+        console.log('No chat history:', err);
       }
+      
+      // Default greeting
+      setMessages([{
+        role: 'assistant',
+        content: `Hi! I'm your AI Professor. I have access to your learning progress, all lectures, and tasks. Ask me anything about physics, math, or computer science, and I can recommend specific materials based on your performance!`,
+        timestamp: new Date()
+      }]);
+      setLoading(false);
     };
 
-    fetchHistory();
+    loadHistory();
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!message.trim()) return;
+  const handleSendMessage = async () => {
+    if (!input.trim() || sending) return;
 
-    const userMessage = message;
-    setMessage('');
+    const text = input.trim();
+    const userMessage: Message = {
+      role: 'user',
+      content: text,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
     setSending(true);
 
     try {
-      const response = await chatApi.send(userMessage);
-      setMessages([...messages, response]);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      alert('Failed to send message');
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081/api/v1';
+      const response = await fetch(`${API_BASE}/professor-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+        body: JSON.stringify({ message: text }),
+      });
+      
+      if (!response.ok) throw new Error('chat failed');
+      const data = await response.json();
+      const aiMessage: Message = { role: 'assistant', content: data.ai_reply || '...', timestamp: new Date() };
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.', timestamp: new Date() }]);
     } finally {
       setSending(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
     }
   };
 
@@ -66,93 +111,47 @@ export default function ProfessorChatPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pb-20">
       <div>
         <h1 className="text-3xl font-bold mb-2">AI Professor</h1>
-        <p className="text-foreground/70">Ask questions about lectures, tasks, or any topic</p>
+        <p className="text-foreground/70">Get personalized learning recommendations and explanations</p>
       </div>
 
-      <Card className="h-[calc(100vh-250px)] flex flex-col">
+      <Card className="border-primary/50">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-primary" />
-            <CardTitle>Chat</CardTitle>
-          </div>
+          <CardTitle className="text-primary">AI Professor Chat</CardTitle>
+          <CardDescription>
+            I have access to your performance stats, all lectures and tasks. Ask for explanations or recommendations!
+          </CardDescription>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col overflow-hidden">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
-            {messages.length === 0 && (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <Bot className="w-12 h-12 mx-auto mb-4 text-foreground/40" />
-                  <p className="text-foreground/60">
-                    No messages yet. Ask me anything!
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {messages.map((msg) => (
-              <div key={msg.id} className="space-y-3">
-                {/* User Message */}
-                <div className="flex gap-3 justify-end">
-                  <div className="max-w-[80%] bg-primary/20 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <User className="w-4 h-4" />
-                      <span className="font-semibold text-sm">You</span>
+        <CardContent>
+          <div ref={chatContainerRef} className="space-y-4 max-h-[60vh] overflow-y-auto p-4 bg-background/50 rounded-lg border border-border">
+            {messages.map((m, idx) => (
+              <div key={idx} className={m.role === 'user' ? 'text-right' : 'text-left'}>
+                <div className={`inline-block px-4 py-3 rounded-lg ${m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'} max-w-[85%] shadow-sm`}>
+                  {m.role === 'assistant' ? (
+                    <div className="prose prose-invert max-w-none">
+                      <LatexRenderer content={m.content} />
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{msg.user_message}</p>
-                  </div>
-                </div>
-
-                {/* AI Response */}
-                <div className="flex gap-3">
-                  <div className="max-w-[80%] bg-background/50 border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Bot className="w-4 h-4 text-primary" />
-                      <span className="font-semibold text-sm">AI Professor</span>
-                    </div>
-                    <div className="prose prose-invert prose-sm max-w-none">
-                      <LatexRenderer content={msg.ai_reply || msg.response || ''} />
-                    </div>
-                    {msg.context_type && (
-                      <div className="mt-3 pt-3 border-t text-xs text-foreground/60">
-                        <p>Context: {msg.context_type} {msg.context_id ? `#${msg.context_id}` : ''}</p>
-                      </div>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="whitespace-pre-wrap">{m.content}</div>
+                  )}
                 </div>
               </div>
             ))}
-
-            {sending && (
-              <div className="flex gap-3">
-                <div className="max-w-[80%] bg-background/50 border rounded-lg p-4">
-                  <div className="flex items-center gap-2">
-                    <Bot className="w-4 h-4 text-primary animate-pulse" />
-                    <span className="font-semibold text-sm">AI Professor</span>
-                    <span className="text-xs text-foreground/60">typing...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div ref={messagesEndRef} />
           </div>
-
-          {/* Input */}
-          <div className="flex gap-2 border-t pt-4">
+          <div className="flex gap-2 mt-4">
             <Input
-              placeholder="Ask a question... (You can use LaTeX: $x^2$)"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
+              placeholder="Ask about lectures, tasks, or get learning recommendations..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
               className="flex-1"
-              disabled={sending}
             />
-            <Button onClick={handleSend} disabled={sending || !message.trim()}>
-              <Send className="w-4 h-4" />
+            <Button onClick={handleSendMessage} disabled={sending}>
+              <Send className="w-4 h-4 mr-2" />
+              {sending ? 'Sending...' : 'Send'}
             </Button>
           </div>
         </CardContent>
@@ -167,23 +166,30 @@ export default function ProfessorChatPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setMessage("Explain the concept of derivatives")}
+            onClick={() => { setInput("What topics should I focus on based on my performance?"); }}
           >
-            Explain derivatives
+            📊 My weak areas
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setMessage("What is Newton's second law?")}
+            onClick={() => { setInput("Recommend some tasks to practice"); }}
           >
-            Newton's laws
+            🎯 Task recommendations
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setMessage("Explain time complexity in algorithms")}
+            onClick={() => { setInput("Explain the concept of derivatives"); }}
           >
-            Time complexity
+            📚 Explain derivatives
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setInput("What is Newton's second law?"); }}
+          >
+            🔬 Newton's laws
           </Button>
         </CardContent>
       </Card>

@@ -160,7 +160,7 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.back()}>
@@ -237,10 +237,10 @@ export default function TaskDetailPage() {
           <CardDescription>Get help solving the problem. The AI will automatically evaluate your answer when you provide it.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div ref={chatContainerRef} className="space-y-4 max-h-[50vh] overflow-y-auto p-2 bg-slate-900/40 rounded-md border border-slate-800">
+          <div ref={chatContainerRef} className="space-y-4 max-h-[50vh] overflow-y-auto p-4 bg-background/50 rounded-lg border border-border">
             {messages.map((m, idx) => (
               <div key={idx} className={m.role === 'user' ? 'text-right' : 'text-left'}>
-                <div className={`inline-block px-3 py-2 rounded-lg ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-100'} max-w-[95%]`}>
+                <div className={`inline-block px-4 py-3 rounded-lg ${m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'} max-w-[85%] shadow-sm`}>
                   {m.role === 'assistant' ? (
                     <div className="prose prose-invert max-w-none">
                       <LatexRenderer content={m.content} />
