@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslation } from '@/contexts/I18nContext';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 import Link from 'next/link';
 
 export default function ForgotPasswordPage() {

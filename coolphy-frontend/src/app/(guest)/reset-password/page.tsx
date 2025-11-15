@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTranslation } from '@/contexts/I18nContext';
+import { useTranslation } from '@/lib/i18n/I18nContext';
 import Link from 'next/link';
 
 function ResetPasswordForm() {
