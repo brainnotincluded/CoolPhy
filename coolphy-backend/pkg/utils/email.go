@@ -47,7 +47,9 @@ func SendEmail(to, subject, body string) error {
 	return smtp.SendMail(addr, nil, config.From, []string{to}, msg)
 }
 
-func SendPasswordResetEmail(to, resetToken, frontendURL string) error {
+func SendPasswordResetEmail(to, name, resetToken string) error {
+	// Get frontend URL from environment or use default
+	frontendURL := getEnv("FRONTEND_URL", "http://178.255.127.62:3000")
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", 
 		strings.TrimRight(frontendURL, "/"), resetToken)
 	
