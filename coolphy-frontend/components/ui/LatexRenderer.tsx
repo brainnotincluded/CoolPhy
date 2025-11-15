@@ -10,6 +10,15 @@ interface LatexRendererProps {
   displayMode?: boolean;
 }
 
+function hashCode(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h) + str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
 export function LatexRenderer({ content, className = '', displayMode = false }: LatexRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -17,8 +26,37 @@ export function LatexRenderer({ content, className = '', displayMode = false }: 
     if (!containerRef.current || !content) return;
 
     try {
-      // Process content to handle both inline and display math
-      const processedContent = content.replace(
+      let processedContent = content;
+
+      // Handle TikZ pictures - replace with iframes that run TikZJax inside
+      processedContent = processedContent.replace(
+        /(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})/g,
+        (match) => {
+          const id = 'tikz-' + hashCode(match);
+          const iframeHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
+  <script src="https://tikzjax.com/v1/tikzjax.js"></script>
+  <style>
+    body { margin:0; padding:20px; display:flex; justify-content:center; align-items:center; min-height:100vh; background:transparent; }
+    svg { max-width:100%; height:auto; }
+  </style>
+</head>
+<body>
+  <script type="text/tikz">
+    ${match}
+  </script>
+</body>
+</html>`;
+          const encoded = encodeURIComponent(iframeHtml);
+          return `<div style="text-align:center;margin:20px 0;"><iframe id="${id}" style="border:none;width:100%;min-height:300px;" src="data:text/html;charset=utf-8,${encoded}" onload="this.style.height=this.contentWindow.document.body.scrollHeight+'px'"></iframe></div>`;
+        }
+      );
+
+      // Process regular math content to handle both inline and display math
+      processedContent = processedContent.replace(
         /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\$(.+?)\$|\\\((.+?)\\\)/g,
         (match, display1, display2, inline1, inline2) => {
           const latex = display1 || display2 || inline1 || inline2;
