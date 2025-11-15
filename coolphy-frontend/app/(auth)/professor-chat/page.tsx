@@ -46,20 +46,24 @@ export default function ProfessorChatPage() {
               );
             });
             setMessages(loadedMessages);
+            setLoading(false);
             return;
           }
         }
       } catch (err) {
         console.log('No chat history:', err);
+      } finally {
+        setLoading(false);
       }
       
-      // Default greeting
-      setMessages([{
-        role: 'assistant',
-        content: `Hi! I'm your AI Professor. I have access to your learning progress, all lectures, and tasks. Ask me anything about physics, math, or computer science, and I can recommend specific materials based on your performance!`,
-        timestamp: new Date()
-      }]);
-      setLoading(false);
+      // Default greeting if no history
+      if (messages.length === 0) {
+        setMessages([{
+          role: 'assistant',
+          content: `Hi! I'm your AI Professor. I have access to your learning progress, all lectures, and tasks. Ask me anything about physics, math, or computer science, and I can recommend specific materials based on your performance!`,
+          timestamp: new Date()
+        }]);
+      }
     };
 
     loadHistory();
