@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -10,10 +10,15 @@ import { Loading } from '@/components/ui/Loading';
 import { LatexRenderer } from '@/components/ui/LatexRenderer';
 import { Input } from '@/components/ui/Input';
 import { taskApi } from '@/lib/api/endpoints';
-import { Task, SolutionAttempt } from '@/types';
-import { ArrowLeft, Send, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
-import { TaskChat } from '@/components/TaskChat';
+import { Task } from '@/types';
+import { ArrowLeft, Send, CheckCircle2, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/I18nContext';
+
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+}
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -23,17 +28,27 @@ export default function TaskDetailPage() {
   
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
-  const [answer, setAnswer] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [attempt, setAttempt] = useState<SolutionAttempt | null>(null);
-  const [showSolution, setShowSolution] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [showProblem, setShowProblem] = useState(true);
   const [showHint, setShowHint] = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [earnedPoints, setEarnedPoints] = useState(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchTask = async () => {
       try {
         const data = await taskApi.get(id);
         setTask(data);
+        setMessages([{
+          role: 'assistant',
+          content: `Hi! I'm your AI teacher. I'm here to help you with 
+**${data.title}**. Ask questions, request hints, and when ready, say "Final answer: ..." and I'll evaluate it and award points.`,
+          timestamp: new Date()
+        }]);
       } catch (error) {
         console.error('Failed to fetch task:', error);
       } finally {
@@ -44,25 +59,67 @@ export default function TaskDetailPage() {
     fetchTask();
   }, [id]);
 
-  const handleSubmit = async () => {
-    if (!answer.trim()) {
-      alert(t('tasks.alertEnterAnswer'));
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!input.trim() || sending) return;
+
+    const text = input.trim();
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: text,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+
+    // If user provided a final answer, evaluate via existing solve endpoint
+    const finalAnswerMatch = text.match(/^(final answer|ответ)\s*[:=-]?\s*(.+)$/i);
+    if (finalAnswerMatch) {
+      const answerText = finalAnswerMatch[2];
+      try {
+        const result = await taskApi.solve(id, answerText);
+        const feedback: ChatMessage = {
+          role: 'assistant',
+          content: result.is_correct
+            ? `✅ ${t('tasks.correctTitle')} +${result.score} ${t('tasks.pointsEarned')}`
+            : `❌ ${t('tasks.incorrectTitle')}\n\n${result.feedback || ''}`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, feedback]);
+        if (result.is_correct) {
+          setIsCompleted(true);
+          setEarnedPoints(result.score || 0);
+          setShowSolution(true);
+        }
+      } catch (err: any) {
+        setMessages(prev => [...prev, { role: 'assistant', content: t('tasks.alertSubmitFailed'), timestamp: new Date() }]);
+      }
       return;
     }
 
-    setSubmitting(true);
+    // Otherwise, send to AI professor chat
+    setSending(true);
     try {
-      const result = await taskApi.solve(id, answer);
-      setAttempt(result);
-      
-      if (result.is_correct) {
-        setShowSolution(true);
-      }
-    } catch (error: any) {
-      console.error('Failed to submit answer:', error);
-      alert(error.response?.data?.error || t('tasks.alertSubmitFailed'));
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081'}/api/v1/professor-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+        body: JSON.stringify({ message: text, context_type: 'task', context_id: id }),
+      });
+      if (!response.ok) throw new Error('chat failed');
+      const data = await response.json();
+      const aiMessage: ChatMessage = { role: 'assistant', content: data.ai_reply || '...', timestamp: new Date() };
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.', timestamp: new Date() }]);
     } finally {
-      setSubmitting(false);
+      setSending(false);
     }
   };
 
@@ -114,13 +171,20 @@ export default function TaskDetailPage() {
       {/* Problem Statement */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('tasks.problem')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="prose prose-invert max-w-none">
-            <LatexRenderer content={task.description_latex} />
+          <div className="flex items-center justify-between">
+            <CardTitle>{t('tasks.problem')}</CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => setShowProblem(!showProblem)}>
+              {showProblem ? <><ChevronUp className="w-4 h-4 mr-2" /> Hide</> : <><ChevronDown className="w-4 h-4 mr-2" /> Show</>}
+            </Button>
           </div>
-        </CardContent>
+        </CardHeader>
+        {showProblem && (
+          <CardContent>
+            <div className="prose prose-invert max-w-none">
+              <LatexRenderer content={task.description_latex} />
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Hint */}
@@ -149,62 +213,60 @@ export default function TaskDetailPage() {
         </Card>
       )}
 
-      {/* Answer Submission */}
-      {!attempt?.is_correct && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('tasks.yourAnswer')}</CardTitle>
-            <CardDescription>{t('tasks.answerDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder={t('tasks.answerPlaceholder')}
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                className="flex-1"
-              />
-              <Button onClick={handleSubmit} disabled={submitting}>
-                <Send className="w-4 h-4 mr-2" />
-                {submitting ? t('tasks.submitting') : t('tasks.submit')}
-              </Button>
-            </div>
-            {attempt && (
-              <div className="mt-4 p-4 border rounded-lg">
-                <div className="flex items-start gap-3">
-                  {attempt.is_correct ? (
-                    <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <XCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
-                  )}
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-2">
-                      {attempt.is_correct ? t('tasks.correctTitle') : t('tasks.incorrectTitle')}
-                    </h3>
-                    <div className="text-sm text-foreground/80">
-                      <LatexRenderer content={attempt.feedback} />
+      {/* Conversational AI Chat */}
+      <Card className="border-primary/50">
+        <CardHeader>
+          <CardTitle className="text-primary">AI Teacher</CardTitle>
+          <CardDescription>Chat about the problem. Say "Final answer: ..." when ready.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4 max-h-[50vh] overflow-y-auto p-2 bg-slate-900/40 rounded-md border border-slate-800">
+            {messages.map((m, idx) => (
+              <div key={idx} className={m.role === 'user' ? 'text-right' : 'text-left'}>
+                <div className={`inline-block px-3 py-2 rounded-lg ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-100'} max-w-[95%]`}>
+                  {m.role === 'assistant' ? (
+                    <div className="prose prose-invert max-w-none">
+                      <LatexRenderer content={m.content} />
                     </div>
-                    {attempt.is_correct && (
-                      <p className="text-sm text-green-500 mt-2">
-                        +{attempt.score} {t('tasks.pointsEarned')}
-                      </p>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="whitespace-pre-wrap">{m.content}</div>
+                  )}
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Input
+              placeholder="Type a message... (e.g., Final answer: ... )"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+              className="flex-1"
+            />
+            <Button onClick={handleSendMessage} disabled={sending}>
+              <Send className="w-4 h-4 mr-2" />
+              {sending ? t('taskChat.thinking') : 'Send'}
+            </Button>
+          </div>
+          {isCompleted && (
+            <div className="mt-4 p-3 rounded border border-green-500/50 bg-green-500/10 text-green-300">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>{t('tasks.taskCompletedTitle')} +{earnedPoints} {t('tasks.points')}</span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Solution */}
-      {task.solution_latex && (attempt?.is_correct || showSolution) && (
+      {task.solution_latex && (isCompleted || showSolution) && (
         <Card className="border-primary/50">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-primary">{t('tasks.solution')}</CardTitle>
-              {!attempt?.is_correct && (
+              {!isCompleted && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -224,29 +286,7 @@ export default function TaskDetailPage() {
         </Card>
       )}
 
-      {/* Success Message */}
-      {attempt?.is_correct && (
-        <Card className="border-green-500/50 bg-green-500/5">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <CardTitle>{t('tasks.taskCompletedTitle')}</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-foreground/80">
-              {t('tasks.taskCompletedDescription')} {attempt.score} {t('tasks.points')}
-            </p>
-            <Link href={`/tasks?subject=${task.subject}`}>
-              <Button variant="outline" className="w-full">
-                {t('tasks.tryMorePrefix')} {t(`subjects.${task.subject}`)} {t('tasks.title')}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Related Lectures */}
+      {/* Continue Learning */}
       <Card>
         <CardHeader>
           <CardTitle>{t('tasks.needHelpTitle')}</CardTitle>
@@ -260,9 +300,6 @@ export default function TaskDetailPage() {
           </Link>
         </CardContent>
       </Card>
-
-      {/* AI Teacher Chat */}
-      <TaskChat taskId={task.id} taskTitle={task.title} />
     </div>
   );
 }
