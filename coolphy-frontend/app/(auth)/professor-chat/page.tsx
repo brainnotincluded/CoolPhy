@@ -28,7 +28,8 @@ export default function ProfessorChatPage() {
     const loadHistory = async () => {
       try {
         const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://178.255.127.62:8081/api/v1';
-        const response = await fetch(`${API_BASE}/professor-chat/history`, {
+        // Filter to get only general professor chat (no task context)
+        const response = await fetch(`${API_BASE}/professor-chat/history?context_type=professor`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           },
@@ -92,7 +93,7 @@ export default function ProfessorChatPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, context_type: 'professor' }),
       });
       
       if (!response.ok) throw new Error('chat failed');
